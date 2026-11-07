@@ -23,11 +23,11 @@ const DOE_SITES = [
   { name: "Paducah site", lat: 37.11, lon: -88.80, dx: -12, dy: -8, anchor: "end" },
   { name: "Savannah River Site", lat: 33.25, lon: -81.65, dx: 12, dy: 10, anchor: "start" },
 ];
-const REGION_COLOR = { ERCOT: "#e8710a", SPP: "#f9ab00", MISO: "#1e8e3e", PJM: "#1a73e8", NYISO: "#9334e6", Southeast: "#12b5cb", West: "#e52592" };
+const REGION_COLOR = { MISO: "#7a1f3d", PJM: "#b8323e", ERCOT: "#de6a3f", West: "#e9a23b", Southeast: "#a8704a", SPP: "#f3c98b", NYISO: "#8e6c8a" };
 const HEAT = ["#fdf8f0", "#fde9c9", "#fccf96", "#f9ad6a", "#f2844f", "#e05a3f", "#c13639", "#93183a", "#5f0a33"];
 const PROB_T = [10, 20, 30, 40, 50, 60, 70, 80];
 const PROB_C = d3.scaleThreshold().domain(PROB_T).range(HEAT);
-const INK = "#202124", BLUE = "#1a73e8", HOT = "#f2844f";
+const INK = "#202124", BLUE = "#202124", HOT = "#f2844f", WARMGREY = "#f1efec";
 
 const fmtPct = d3.format(".0%"), fmt1 = d3.format(".1f");
 const fmtGW = mw => (mw / 1000).toFixed(1) + " GW";
@@ -91,7 +91,7 @@ function setupGeo() {
   G.NX = (G.nx - 1) * G.k + 1; G.NY = (G.ny - 1) * G.k + 1;
   D.us.forEach(d => { d.xy = projection([d.lon, d.lat]); });
 }
-function baseMap(svg, fill = "#f1f3f4") {
+function baseMap(svg, fill = WARMGREY) {
   const p = d3.geoPath();
   svg.append("path").datum(G.nation).attr("d", p).attr("fill", fill);
   svg.append("path").datum(G.states).attr("d", p).attr("fill", "none").attr("stroke", "#fff").attr("stroke-width", 1);
@@ -162,12 +162,12 @@ function rampLegend(sel, label, colors, ticks, extras) {
 /* ---------------- Header: heat pulses sweep a quiet map ---------------- */
 const Hero = {
   init() {
-    const svg = d3.select("#hero").attr("viewBox", "60 20 870 560");
+    const svg = d3.select("#hero").attr("viewBox", "0 0 975 610");
     const defs = svg.append("defs");
     const gr = defs.append("radialGradient").attr("id", "pulse");
     [[0, HOT, 0.55], [0.6, HOT, 0.25], [1, HOT, 0]].forEach(([o, c, a]) => gr.append("stop").attr("offset", o).attr("stop-color", c).attr("stop-opacity", a));
     defs.append("clipPath").attr("id", "hero-clip").append("path").datum(G.nation).attr("d", d3.geoPath());
-    baseMap(svg, "#eef1f6");
+    baseMap(svg, "#ecebe8");
     const pulses = svg.append("g").attr("clip-path", "url(#hero-clip)");
     const r = d3.scaleSqrt().domain([0, 2800]).range([2.2, 9]);
     const dots = svg.append("g").selectAll("circle").data(D.us).join("circle").attr("cx", d => d.xy[0]).attr("cy", d => d.xy[1]).attr("r", d => r(d.power))
@@ -198,10 +198,10 @@ const Build = {
     this.totals = this.months.map((_, i) => d3.sum(this.rows, d => d.s[i]));
     this.r = d3.scaleSqrt().domain([0, 2800]).range([0, 22]);
     this.dots = svg.append("g").selectAll("circle").data(this.rows).join("circle").attr("cx", d => d.xy[0]).attr("cy", d => d.xy[1]).attr("r", 0)
-      .attr("fill", BLUE).attr("fill-opacity", 0.45).attr("stroke", BLUE).attr("stroke-width", 1.2)
+      .attr("fill", INK).attr("fill-opacity", 0.28).attr("stroke", INK).attr("stroke-width", 1.1)
       .on("mousemove", (e, d) => showTip(e, `<b>${d.name}</b><br><span class="t-muted">${d.owner || ""}</span><br>${fmtGW(d.s[this.i])} online in ${d3.timeFormat("%b %Y")(this.months[this.i])}<br><span class="t-muted">${fmtGW(d.power)} planned</span>`)).on("mouseleave", hideTip);
-    this.stamp = svg.append("text").attr("class", "stamp").attr("x", 30).attr("y", 50);
-    this.sub = svg.append("text").attr("class", "stamp-sub").attr("x", 30).attr("y", 76);
+    this.stamp = svg.append("text").attr("class", "stamp").attr("x", 24).attr("y", 548);
+    this.sub = svg.append("text").attr("class", "stamp-sub").attr("x", 24).attr("y", 574);
     // timeline
     const W = 660, H = 110, m = { t: 10, r: 10, b: 24, l: 40 };
     const g = d3.select("#build-line").attr("viewBox", `0 0 ${W} ${H}`).append("g").attr("transform", `translate(${m.l},${m.t})`);
@@ -210,10 +210,10 @@ const Build = {
     const y = d3.scaleLinear().domain([0, 45]).range([ih, 0]);
     g.append("g").attr("class", "axis").call(d3.axisLeft(y).ticks(3).tickFormat(d => d + " GW").tickSize(-iw)).call(gridY);
     g.append("g").attr("class", "axis").attr("transform", `translate(0,${ih})`).call(d3.axisBottom(this.x).ticks(d3.timeYear).tickFormat(d3.timeFormat("%Y")).tickSize(3)).call(a => a.select(".domain").attr("stroke", "#bdc1c6"));
-    g.append("path").datum(this.totals).attr("fill", "#e8f0fe").attr("d", d3.area().x((d, i) => this.x(this.months[i])).y0(ih).y1(d => y(d / 1000)));
+    g.append("path").datum(this.totals).attr("fill", "#f1efec").attr("d", d3.area().x((d, i) => this.x(this.months[i])).y0(ih).y1(d => y(d / 1000)));
     this.prog = g.append("path").datum(this.totals).attr("fill", "none").attr("stroke", BLUE).attr("stroke-width", 2.5);
     this.line = d3.line().x((d, i) => this.x(this.months[i])).y(d => y(d / 1000));
-    this.cursor = g.append("circle").attr("r", 5).attr("fill", BLUE).attr("stroke", "#fff").attr("stroke-width", 2);
+    this.cursor = g.append("circle").attr("r", 5).attr("fill", HOT).attr("stroke", "#fff").attr("stroke-width", 2);
     this.y = y;
     const hit = g.append("rect").attr("width", iw).attr("height", ih).attr("fill", "transparent").style("cursor", "ew-resize");
     const scrub = e => { this.stop(); const t = this.x.invert(d3.pointer(e, hit.node())[0]); this.set(Math.max(0, Math.min(this.months.length - 1, d3.bisectLeft(this.months, t)))); };
@@ -328,52 +328,60 @@ const Ring = {
   },
 };
 
-/* ---------------- Figure 4: streams of region-wide heat ---------------- */
+/* ---------------- Figure 4: region-wide heat through the season ---------------- */
 const Stream = {
   init() {
-    const W = 720, H = 400, m = { t: 20, r: 16, b: 34, l: 16 };
-    const g = d3.select("#stream").attr("viewBox", `0 0 ${W} ${H}`).append("g").attr("transform", `translate(${m.l},${m.t})`);
+    const W = 720, H = 380, m = { t: 44, r: 16, b: 34, l: 48 };
+    const svg = d3.select("#stream").attr("viewBox", `0 0 ${W} ${H}`), g = svg.append("g").attr("transform", `translate(${m.l},${m.t})`);
     this.iw = W - m.l - m.r; this.ih = H - m.t - m.b;
-    this.d0 = 104; this.d1 = 290; this.days = d3.range(this.d0, this.d1);
-    this.R = D.streams.regions;
+    this.d0 = 120; this.d1 = 275; this.days = d3.range(this.d0, this.d1);
+    this.R = ["MISO", "PJM", "ERCOT", "West", "Southeast", "SPP", "NYISO"];
     const smooth = arr => arr.map((v, i) => d3.mean(arr.slice(Math.max(0, i - 4), i + 5)));
     this.data = {};
     CLIMATES.forEach(c => {
-      const per = this.R.map((r, j) => smooth(D.streams.by[c.key][j]));
-      this.data[c.key] = this.days.map(d => Object.fromEntries([["d", d], ...this.R.map((r, j) => [r, per[j][d]])]));
+      const per = Object.fromEntries(D.streams.regions.map((r, j) => [r, smooth(D.streams.by[c.key][j])]));
+      this.data[c.key] = this.days.map(d => Object.fromEntries([["d", d], ...this.R.map(r => [r, per[r][d]])]));
     });
-    this.stack = d3.stack().keys(this.R).offset(d3.stackOffsetSilhouette).order(d3.stackOrderInsideOut);
-    const ext = d3.max(CLIMATES, c => d3.max(this.stack(this.data[c.key]), s => d3.max(s, p => Math.abs(p[1]))));
+    this.stack = d3.stack().keys(this.R);
     this.x = d3.scaleLinear().domain([this.d0, this.d1 - 1]).range([0, this.iw]);
-    this.y = d3.scaleLinear().domain([-ext, ext]).range([this.ih, 0]);
-    const months = d3.range(3, 10).map(mo => ({ mo, d: d3.timeDay.count(new Date(2050, 0, 1), new Date(2050, mo, 1)) })).filter(o => o.d >= this.d0);
-    g.append("g").selectAll("line").data(months).join("line").attr("x1", o => this.x(o.d)).attr("x2", o => this.x(o.d)).attr("y1", 0).attr("y2", this.ih).attr("stroke", "#eef0f2");
-    g.append("g").selectAll("text").data(months).join("text").attr("class", "axis-title").attr("x", o => this.x(o.d) + 4).attr("y", this.ih + 22).text(o => MONTHS[o.mo]);
+    this.y = d3.scaleLinear().range([this.ih, 0]);
+    const months = d3.range(4, 10).map(mo => ({ mo, d: d3.timeDay.count(new Date(2050, 0, 1), new Date(2050, mo, 1)) }));
+    g.append("g").attr("class", "axis").attr("transform", `translate(0,${this.ih})`).call(d3.axisBottom(this.x).tickValues(months.map(o => o.d + 14)).tickFormat((v, i) => MONTHS[months[i].mo]).tickSize(0)).call(a => a.select(".domain").attr("stroke", "#bdc1c6")).selectAll("text").attr("dy", "1.2em");
+    this.ya = g.append("g").attr("class", "axis");
+    g.append("text").attr("class", "axis-title").attr("x", -m.l + 2).attr("y", -14).text("Expected number of grid regions in region-wide heat");
     this.area = d3.area().x(p => this.x(p.data.d)).y0(p => this.y(p[0])).y1(p => this.y(p[1])).curve(d3.curveBasis);
-    const histStack = this.stack(this.data[HIST]);
-    this.ghost = g.append("path").attr("fill", "none").attr("stroke", "#9aa0a6").attr("stroke-dasharray", "3,3")
-      .attr("d", d3.area().x((p, i) => this.x(this.days[i])).y0((p, i) => this.y(histStack[0][i][0])).y1((p, i) => this.y(histStack[histStack.length - 1][i][1])).curve(d3.curveBasis)(this.days));
-    this.paths = g.append("g").selectAll("path").data(this.stack(this.data[HIST]), s => s.key).join("path")
-      .attr("fill", s => REGION_COLOR[s.key]).attr("fill-opacity", 0.85).attr("stroke", "#fff").attr("stroke-width", 0.6).attr("d", this.area);
-    this.labels = g.append("g").selectAll("text").data(this.R).join("text").attr("class", "stream-label").attr("text-anchor", "middle").style("pointer-events", "none");
-    this.cursor = g.append("line").attr("y1", 0).attr("y2", this.ih).attr("stroke", INK).attr("stroke-width", 1).style("display", "none");
+    this.paths = g.append("g").selectAll("path").data(this.stack(this.data[HIST]), s => s.key).join("path").attr("fill", s => REGION_COLOR[s.key]).attr("stroke", "#fff").attr("stroke-width", 0.5);
+    this.histTotal = this.days.map((d, i) => d3.sum(this.R, r => this.data[HIST][i][r]));
+    this.ghost = g.append("path").attr("fill", "none").attr("stroke", INK).attr("stroke-width", 1.5).attr("stroke-dasharray", "4,3");
+    this.cursor = g.append("line").attr("y1", 0).attr("y2", this.ih).attr("stroke", INK).style("display", "none");
     g.append("rect").attr("width", this.iw).attr("height", this.ih).attr("fill", "transparent")
       .on("mousemove", e => {
-        const d = Math.round(this.x.invert(d3.pointer(e)[0])), row = this.data[state.climate][Math.max(0, Math.min(this.days.length - 1, d - this.d0))];
+        const i = Math.max(0, Math.min(this.days.length - 1, Math.round(this.x.invert(d3.pointer(e)[0])) - this.d0)), row = this.data[state.climate][i];
         this.cursor.attr("x1", this.x(row.d)).attr("x2", this.x(row.d)).style("display", null);
         const dt = d3.timeDay.offset(new Date(2050, 0, 1), row.d);
-        showTip(e, `<b>${d3.timeFormat("%B %-d")(dt)}</b> · ${CL[state.climate].label}<br>` + this.R.slice().sort((a, b) => row[b] - row[a]).map(r => `<span style="color:${REGION_COLOR[r]}">●</span> ${r} ${fmtPct(row[r])}`).join("<br>"));
+        showTip(e, `<b>${d3.timeFormat("%B %-d")(dt)}</b> · ${CL[state.climate].label}<br>Chance of region-wide heat:<br>` + this.R.slice().sort((a, b) => row[b] - row[a]).map(r => `<span style="color:${REGION_COLOR[r]}">■</span> ${r} ${fmtPct(row[r])}`).join("<br>"));
       }).on("mouseleave", () => { hideTip(); this.cursor.style("display", "none"); });
-    g.append("text").attr("class", "ref-label").attr("x", this.iw).attr("y", 10).attr("text-anchor", "end").text("Dashed outline: 1995–2014");
+    // key, ordered as stacked from the bottom
+    const key = svg.append("g").attr("transform", `translate(${m.l},${H - 4})`);
+    let kx = 0;
+    this.R.forEach(r => {
+      const it = key.append("g").attr("transform", `translate(${kx},0)`);
+      it.append("rect").attr("y", -9).attr("width", 10).attr("height", 10).attr("rx", 2).attr("fill", REGION_COLOR[r]);
+      const t = it.append("text").attr("x", 14).attr("y", 0).text(r);
+      kx += 14 + r.length * 7.2 + 18;
+    });
+    const gk = key.append("g").attr("transform", `translate(${kx + 6},0)`);
+    gk.append("line").attr("x1", 0).attr("x2", 22).attr("y1", -4).attr("y2", -4).attr("stroke", INK).attr("stroke-width", 1.5).attr("stroke-dasharray", "4,3");
+    gk.append("text").attr("x", 28).attr("y", 0).text("1995–2014 total");
+    svg.attr("viewBox", `0 0 ${W} ${H + 16}`); key.attr("transform", `translate(${m.l},${H + 10})`);
   },
   update() {
-    const st = this.stack(this.data[state.climate]);
-    this.paths.data(st, s => s.key).transition().duration(DUR * 1.2).attr("d", this.area);
-    this.labels.data(st.map(s => s.key)).transition().duration(DUR * 1.2)
-      .attr("x", (r, j) => { const s = st.find(q => q.key === r), i = d3.maxIndex(s, p => p[1] - p[0]); return this.x(this.days[i]); })
-      .attr("y", (r, j) => { const s = st.find(q => q.key === r), i = d3.maxIndex(s, p => p[1] - p[0]); return this.y((s[i][0] + s[i][1]) / 2); })
-      .attr("opacity", r => { const s = st.find(q => q.key === r); return d3.max(s, p => p[1] - p[0]) > 0.16 ? 1 : 0; })
-      .text(r => r);
+    const st = this.stack(this.data[state.climate]), top = d3.max(st[st.length - 1], p => p[1]);
+    this.y.domain([0, Math.max(0.6, top * 1.15)]).nice();
+    this.ya.transition().duration(DUR).call(d3.axisLeft(this.y).ticks(5).tickFormat(d3.format(".1~f")).tickSize(-this.iw)).call(gridY);
+    this.paths.data(st, s => s.key).transition().duration(DUR).attr("d", this.area);
+    const line = d3.line().x((v, i) => this.x(this.days[i])).y(v => this.y(v)).curve(d3.curveBasis);
+    this.ghost.transition().duration(DUR).attr("d", line(this.histTotal));
   },
 };
 
@@ -385,7 +393,7 @@ const Siting = {
     svg.append("g").selectAll("circle").data(D.us).join("circle").attr("cx", d => d.xy[0]).attr("cy", d => d.xy[1]).attr("r", d => r(d.power))
       .attr("fill", "#fff").attr("fill-opacity", 0.6).attr("stroke", "#5f6368").attr("stroke-width", 0.7).style("pointer-events", "none");
     const dg = svg.append("g").selectAll("g").data(DOE_SITES).join("g").attr("transform", d => `translate(${projection([d.lon, d.lat])})`).style("pointer-events", "none");
-    const halo = dg.append("circle").attr("r", 8).attr("fill", "none").attr("stroke", BLUE).attr("stroke-width", 2);
+    const halo = dg.append("circle").attr("r", 8).attr("fill", "none").attr("stroke", INK).attr("stroke-width", 1.5);
     dg.append("path").attr("d", d3.symbol(d3.symbolDiamond, 240)()).attr("fill", BLUE).attr("stroke", "#fff").attr("stroke-width", 1.5);
     dg.append("text").attr("class", "map-label small").attr("x", d => d.dx).attr("y", d => d.dy).attr("text-anchor", d => d.anchor).text(d => d.name);
     if (!reduceMotion) { const pulse = () => halo.attr("r", 8).attr("opacity", 0.9).transition().duration(1800).ease(d3.easeCubicOut).attr("r", 30).attr("opacity", 0).on("end", (d, i) => i === 0 && pulse()); pulse(); }
@@ -410,58 +418,118 @@ const Siting = {
 };
 
 /* ---------------- Figure 6: a rotating globe ---------------- */
-const DAYS_T = [6, 10, 15, 25, 40, 80, 160];
-const DAYS_C = d3.scaleThreshold().domain(DAYS_T).range(HEAT.slice(0, 8));
+// Raster globe: each pixel is inverse-projected, the 2-degree field is sampled bilinearly
+// and coloured on a continuous scale; coastlines, sites and labels are drawn as vectors on top.
+const GLOBE_MAX = 120;
+const GLOBE_C = d3.scaleSequentialSqrt(d3.piecewise(d3.interpolateRgb, ["#fbf3e6", "#fcd9a6", "#f8ad6a", "#ef7b4f", "#d64a3e", "#a8203b", "#6b0c35"])).domain([3, GLOBE_MAX]).clamp(true);
+const GLOBE_HUBS = [{ t: "Johor", lon: 103.6, lat: 1.4 }, { t: "Abu Dhabi", lon: 54.5, lat: 24.3 }, { t: "Narvik", lon: 17.4, lat: 68.4 },
+  { t: "Inner Mongolia", lon: 112.5, lat: 40.8 }, { t: "Northern Virginia", lon: -77.5, lat: 38.9 }, { t: "Texas", lon: -99.7, lat: 32.4 }, { t: "Melbourne", lon: 144.9, lat: -37.8 }];
 const Globe = {
   async init() {
     let world, glob;
     try { [world, glob] = await Promise.all([json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json"), json("data/global.json")]); }
     catch (e) { d3.select("#world-take").text("The global field is still being computed."); return; }
     this.glob = glob; this.land = topojson.feature(world, world.objects.land);
+    this.nlat = glob.lat.length; this.nlon = glob.lon.length;
     const stage = document.getElementById("globe-stage"), canvas = document.getElementById("globe");
-    this.ctx = canvas.getContext("2d"); this.canvas = canvas; this.W = 720; this.H = 560;
-    this.proj = d3.geoOrthographic().scale(258).translate([this.W / 2, this.H / 2]).rotate([90, -25]).clipAngle(90);
-    const { lat, lon } = glob, dl = lat[1] - lat[0];
-    this.cells = []; lat.forEach((la, i) => lon.forEach((lo, j) => this.cells.push({ k: i * lon.length + j, c: [lo, la], ring: [[lo - dl / 2, la - dl / 2], [lo + dl / 2, la - dl / 2], [lo + dl / 2, la + dl / 2], [lo - dl / 2, la + dl / 2]] })));
+    this.W = 720; this.H = 600; this.R = 270;
+    this.ctx = canvas.getContext("2d"); this.canvas = canvas;
+    this.proj = d3.geoOrthographic().scale(this.R).translate([this.W / 2, this.H / 2]).rotate([95, -28]).clipAngle(90).precision(0.5);
+    // land mask on an equirectangular grid (0.5 degree)
+    const mw = 720, mh = 360, mc = document.createElement("canvas"); mc.width = mw; mc.height = mh;
+    const mctx = mc.getContext("2d"), eq = d3.geoEquirectangular().scale(mw / (2 * Math.PI)).translate([mw / 2, mh / 2]);
+    mctx.fillStyle = "#000"; mctx.beginPath(); d3.geoPath(eq, mctx)(this.land); mctx.fill();
+    const md = mctx.getImageData(0, 0, mw, mh).data; this.mask = new Uint8Array(mw * mh); for (let i = 0; i < mw * mh; i++) this.mask[i] = md[i * 4 + 3] > 100;
+    this.mw = mw; this.mh = mh;
+    // offscreen raster at reduced resolution, scaled up smoothly
+    this.rs = 1.6; this.rw = Math.round(this.W / this.rs); this.rh = Math.round(this.H / this.rs);
+    this.off = document.createElement("canvas"); this.off.width = this.rw; this.off.height = this.rh;
+    this.octx = this.off.getContext("2d"); this.img = this.octx.createImageData(this.rw, this.rh);
+    this.lut = d3.range(256).map(v => d3.rgb(GLOBE_C(v)));
     const resize = () => { const w = stage.clientWidth, dpr = window.devicePixelRatio || 1; canvas.width = Math.round(w * dpr); canvas.height = Math.round(w * this.H / this.W * dpr); canvas.style.height = (w * this.H / this.W) + "px"; this.scale = canvas.width / this.W; };
     new ResizeObserver(resize).observe(stage); resize();
-    this.siteR = d3.scaleSqrt().domain([0, 2800]).range([2, 7]);
-    d3.select(canvas).call(d3.drag().on("start", () => { this.dragging = true; }).on("drag", e => { const r = this.proj.rotate(); this.proj.rotate([r[0] + e.dx * 0.35, Math.max(-60, Math.min(60, r[1] - e.dy * 0.35))]); }).on("end", () => { this.dragging = false; }))
+    this.siteR = d3.scaleSqrt().domain([0, 2800]).range([2.2, 7.5]);
+    d3.select(canvas).call(d3.drag().on("start", () => { this.dragging = true; hideTip(); })
+      .on("drag", e => { const r = this.proj.rotate(), k = this.canvas.getBoundingClientRect().width / this.W; this.proj.rotate([r[0] + e.dx / k * 0.3, Math.max(-70, Math.min(70, r[1] - e.dy / k * 0.3))]); })
+      .on("end", () => { this.dragging = false; this.resumeAt = performance.now() + 2500; }))
       .on("mousemove", e => {
         const rect = canvas.getBoundingClientRect(), mx = (e.clientX - rect.left) / rect.width * this.W, my = (e.clientY - rect.top) / rect.height * this.H;
-        const vis = D.sites.filter(d => d3.geoDistance([d.lon, d.lat], [-this.proj.rotate()[0], -this.proj.rotate()[1]]) < Math.PI / 2);
-        const hit = vis.map(d => ({ d, p: this.proj([d.lon, d.lat]) })).find(o => Math.hypot(o.p[0] - mx, o.p[1] - my) < 8);
-        if (hit) { const st = hit.d.stats[state.climate]; showTip(e, `<b>${hit.d.name}</b><br><span class="t-muted">${hit.d.country}</span>${st ? `<br><b>${fmt1(st.hot[1])}</b> extreme heat days per year` : ""}`); this.hover = true; }
-        else if (this.hover) { hideTip(); this.hover = false; }
-      }).on("mouseleave", () => hideTip());
-    rampLegend("#globe-legend", "Extreme heat days per year (ten-model median)", DAYS_C.range(), [[0, ""], [1, "6"], [3, "15"], [5, "40"], [7, "160"]], g => {
-      g.append("circle").attr("cx", 7).attr("cy", 18).attr("r", 5).attr("fill", BLUE).attr("stroke", "#fff");
-      g.append("text").attr("x", 20).attr("y", 22).text("AI data center");
-    });
+        const c = this.centre(), hit = D.sites.filter(d => d3.geoDistance([d.lon, d.lat], c) < Math.PI / 2 - 0.05).map(d => ({ d, p: this.proj([d.lon, d.lat]) })).find(o => Math.hypot(o.p[0] - mx, o.p[1] - my) < 8);
+        if (hit) { this.hovering = true; const st = hit.d.stats[state.climate]; showTip(e, `<b>${hit.d.name}</b><br><span class="t-muted">${hit.d.country} · ${fmtGW(hit.d.power)} planned</span>${st ? `<br><b>${fmt1(st.hot[1])}</b> extreme heat days per year` : ""}`); }
+        else if (this.hovering) { this.hovering = false; hideTip(); }
+      }).on("mouseleave", () => { this.hovering = false; hideTip(); });
+    // continuous legend
+    const lg = d3.select("#globe-legend").append("svg").attr("viewBox", "0 0 720 44");
+    const grd = lg.append("defs").append("linearGradient").attr("id", "globe-grad");
+    d3.range(0, 1.001, 0.1).forEach(t => grd.append("stop").attr("offset", t).attr("stop-color", GLOBE_C(3 + (GLOBE_MAX - 3) * t * t)));
+    lg.append("text").attr("class", "lg-title").attr("y", 4).attr("dy", "0.8em").text("Extreme heat days per year over land (ten-model median)");
+    lg.append("rect").attr("y", 20).attr("width", 300).attr("height", 8).attr("rx", 4).attr("fill", "url(#globe-grad)");
+    const lx = v => 300 * Math.sqrt((v - 3) / (GLOBE_MAX - 3));
+    [[3, "4"], [15, "15"], [40, "40"], [80, "80"], [GLOBE_MAX, "120+"]].forEach(([v, t]) => lg.append("text").attr("x", lx(v)).attr("y", 42).attr("text-anchor", v === 3 ? "start" : v === GLOBE_MAX ? "end" : "middle").text(t));
+    const g2 = lg.append("g").attr("transform", "translate(360,10)");
+    g2.append("circle").attr("cx", 7).attr("cy", 14).attr("r", 5).attr("fill", BLUE).attr("stroke", "#fff").attr("stroke-width", 1.5);
+    g2.append("text").attr("x", 20).attr("y", 18).text("AI data center, sized by planned power");
     this.cur = this.field(state.climate);
-    d3.timer(() => { if (!this.dragging && !reduceMotion) { const r = this.proj.rotate(); this.proj.rotate([r[0] + 0.12, r[1]]); } this.paint(); });
+    let last = performance.now(); this.visible = false;
+    new IntersectionObserver(es => es.forEach(e => { this.visible = e.isIntersecting; }), { threshold: 0.05 }).observe(stage);
+    d3.timer(() => {
+      const now = performance.now(), dt = Math.min(50, now - last); last = now;
+      if (!this.visible && this.painted) return;
+      this.painted = true;
+      if (!this.dragging && !reduceMotion && !(this.resumeAt && now < this.resumeAt) && !this.hovering) { const r = this.proj.rotate(); this.proj.rotate([r[0] + dt * 0.006, r[1]]); }
+      this.paint();
+    });
     this.ready = true;
   },
+  centre() { const r = this.proj.rotate(); return [-r[0], -r[1]]; },
   field(k) { return decodeU8(this.glob.by[k]); },
+  sample(lon, lat) {
+    const a = this.cur, nl = this.nlon, fy = (lat + 89) / 2, fx = (lon + 179) / 2;
+    const y0 = Math.max(0, Math.min(this.nlat - 2, Math.floor(fy))), wy = Math.max(0, Math.min(1, fy - y0));
+    let x0 = Math.floor(fx), wx = fx - x0; x0 = ((x0 % nl) + nl) % nl; const x1 = (x0 + 1) % nl;
+    return (a[y0 * nl + x0] * (1 - wx) + a[y0 * nl + x1] * wx) * (1 - wy) + (a[(y0 + 1) * nl + x0] * (1 - wx) + a[(y0 + 1) * nl + x1] * wx) * wy;
+  },
+  raster() {
+    const { rw, rh, rs, proj, img } = this, d = img.data, cx = this.W / 2, cy = this.H / 2, R = this.R;
+    for (let j = 0; j < rh; j++) for (let i = 0; i < rw; i++) {
+      const o = (j * rw + i) * 4, x = i * rs + rs / 2, y = j * rs + rs / 2;
+      if ((x - cx) ** 2 + (y - cy) ** 2 >= R * R) { d[o + 3] = 0; continue; }
+      const ll = proj.invert([x, y]);
+      const mi = Math.floor((ll[1] * -1 + 90) / 180 * this.mh), mj = Math.floor((ll[0] + 180) / 360 * this.mw);
+      if (!this.mask[Math.max(0, Math.min(this.mh - 1, mi)) * this.mw + ((mj % this.mw) + this.mw) % this.mw]) { d[o] = 242; d[o + 1] = 240; d[o + 2] = 236; d[o + 3] = 255; continue; }
+      const c = this.lut[Math.max(0, Math.min(255, Math.round(this.sample(ll[0], ll[1]))))];
+      d[o] = c.r; d[o + 1] = c.g; d[o + 2] = c.b; d[o + 3] = 255;
+    }
+    this.octx.putImageData(img, 0, 0);
+  },
   paint() {
-    const { ctx, scale, proj } = this, a = this.cur;
+    const { ctx, scale, proj } = this, cx = this.W / 2, cy = this.H / 2, R = this.R;
+    this.raster();
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, this.canvas.width, this.canvas.height); ctx.setTransform(scale, 0, 0, scale, 0, 0);
-    const geo = d3.geoPath(proj, ctx), centre = [-proj.rotate()[0], -proj.rotate()[1]];
-    ctx.beginPath(); geo({ type: "Sphere" }); ctx.fillStyle = "#f4f6f9"; ctx.fill();
-    ctx.beginPath(); geo(d3.geoGraticule10()); ctx.strokeStyle = "rgba(60,64,67,.07)"; ctx.lineWidth = 0.6; ctx.stroke();
-    ctx.save(); ctx.beginPath(); geo(this.land); ctx.clip();
-    for (const c of this.cells) {
-      if (d3.geoDistance(c.c, centre) > 1.62) continue;
-      const pts = c.ring.map(p => proj(p)); if (pts.some(p => !p)) continue;
-      ctx.fillStyle = DAYS_C(a[c.k]); ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < 4; i++) ctx.lineTo(pts[i][0], pts[i][1]); ctx.closePath(); ctx.fill();
-    }
-    ctx.restore();
-    ctx.beginPath(); geo(this.land); ctx.strokeStyle = "rgba(60,64,67,.45)"; ctx.lineWidth = 0.5; ctx.stroke();
+    const glow = ctx.createRadialGradient(cx, cy, R * 0.96, cx, cy, R * 1.12);
+    glow.addColorStop(0, "rgba(120,90,70,.14)"); glow.addColorStop(1, "rgba(120,90,70,0)");
+    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(cx, cy, R * 1.12, 0, 2 * Math.PI); ctx.fill();
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(this.off, 0, 0, this.W, this.H);
+    const geo = d3.geoPath(proj, ctx);
+    ctx.beginPath(); geo(d3.geoGraticule10()); ctx.strokeStyle = "rgba(60,64,67,.06)"; ctx.lineWidth = 0.6; ctx.stroke();
+    ctx.beginPath(); geo(this.land); ctx.strokeStyle = "rgba(60,64,67,.5)"; ctx.lineWidth = 0.6; ctx.stroke();
+    const shade = ctx.createRadialGradient(cx - R * 0.35, cy - R * 0.4, R * 0.1, cx, cy, R);
+    shade.addColorStop(0, "rgba(255,255,255,.10)"); shade.addColorStop(0.7, "rgba(255,255,255,0)"); shade.addColorStop(1, "rgba(32,33,36,.10)");
+    ctx.fillStyle = shade; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 2 * Math.PI); ctx.fill();
+    const c = this.centre();
     for (const d of D.sites) {
-      if (d3.geoDistance([d.lon, d.lat], centre) > Math.PI / 2 - 0.02) continue;
-      const p = proj([d.lon, d.lat]); ctx.beginPath(); ctx.arc(p[0], p[1], this.siteR(d.power), 0, 2 * Math.PI); ctx.fillStyle = BLUE; ctx.fill(); ctx.strokeStyle = "#fff"; ctx.lineWidth = 1; ctx.stroke();
+      if (d3.geoDistance([d.lon, d.lat], c) > Math.PI / 2 - 0.03) continue;
+      const p = proj([d.lon, d.lat]); ctx.beginPath(); ctx.arc(p[0], p[1], this.siteR(d.power), 0, 2 * Math.PI);
+      ctx.fillStyle = BLUE; ctx.fill(); ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.2; ctx.stroke();
     }
-    ctx.beginPath(); geo({ type: "Sphere" }); ctx.strokeStyle = "#bdc1c6"; ctx.lineWidth = 1; ctx.stroke();
+    ctx.font = "500 12.5px 'Google Sans Flex', Arial, sans-serif"; ctx.textBaseline = "middle";
+    for (const h of GLOBE_HUBS) {
+      const dist = d3.geoDistance([h.lon, h.lat], c); if (dist > 1.25) continue;
+      const p = proj([h.lon, h.lat]), a = Math.max(0, Math.min(1, (1.25 - dist) / 0.25));
+      ctx.globalAlpha = a; ctx.lineWidth = 3.5; ctx.strokeStyle = "rgba(255,255,255,.9)"; ctx.strokeText(h.t, p[0] + 10, p[1]); ctx.fillStyle = INK; ctx.fillText(h.t, p[0] + 10, p[1]); ctx.globalAlpha = 1;
+    }
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, 2 * Math.PI); ctx.strokeStyle = "rgba(60,64,67,.25)"; ctx.lineWidth = 1; ctx.stroke();
   },
   update() {
     if (!this.ready) return;
