@@ -372,7 +372,7 @@ const Stream = {
     this.labels.data(st.map(s => s.key)).transition().duration(DUR * 1.2)
       .attr("x", (r, j) => { const s = st.find(q => q.key === r), i = d3.maxIndex(s, p => p[1] - p[0]); return this.x(this.days[i]); })
       .attr("y", (r, j) => { const s = st.find(q => q.key === r), i = d3.maxIndex(s, p => p[1] - p[0]); return this.y((s[i][0] + s[i][1]) / 2); })
-      .attr("opacity", r => { const s = st.find(q => q.key === r); return d3.max(s, p => p[1] - p[0]) > 0.07 ? 1 : 0; })
+      .attr("opacity", r => { const s = st.find(q => q.key === r); return d3.max(s, p => p[1] - p[0]) > 0.16 ? 1 : 0; })
       .text(r => r);
   },
 };
