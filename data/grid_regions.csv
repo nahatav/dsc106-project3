@@ -1,0 +1,78 @@
+name,grid_region
+Colossus 2,Southeast (TVA)
+OpenAI Stargate Abilene,ERCOT
+Anthropic-Amazon New Carlisle,PJM
+Microsoft Fairwater Atlanta,Southeast (Southern Co.)
+Google Pryor (North),SPP
+Meta Prometheus,PJM
+Microsoft Fairwater Wisconsin,MISO
+Google Columbus,PJM
+Google New Albany,PJM
+Anthropic Lake Mariner,NYISO
+Google Mesa,West (non-RTO)
+Colossus 1,Southeast (TVA)
+Google Council Bluffs (East),MISO
+CoreWeave Denton TX,ERCOT
+QTS Richmond 1,PJM
+Meta Rosemount,MISO
+Amazon Madison Mega Site,MISO
+Google Bristow,PJM
+Microsoft Goodyear,West (non-RTO)
+Meta Jeffersonville,MISO
+Google Kansas City East,SPP
+Meta Temple,ERCOT
+AWS New Albany,PJM
+Google Omaha,SPP
+Google Lincoln,SPP
+QTS Richmond 2,PJM
+Google The Dalles,West (non-RTO)
+QTS Richmond 3,PJM
+Meta Montgomery,Southeast (Southern Co.)
+Meta Kuna,West (non-RTO)
+Meta Cheyenne,West (non-RTO)
+Amazon Ridgeland,MISO
+Meta Huntsville,Southeast (TVA)
+Coreweave Helios,ERCOT
+Microsoft Project Osmium,MISO
+Meta Eagle Mountain,West (non-RTO)
+Meta Aiken,Southeast (other)
+Google Midlothian,ERCOT
+Google Storey County,West (non-RTO)
+Meta Los Lunas,West (non-RTO)
+Google Lancaster,PJM
+Meta-QTS Hillsboro 2,West (non-RTO)
+Google Arcola,PJM
+Google Red Oak,ERCOT
+Google Papillion,SPP
+Meta Gallatin,Southeast (TVA)
+CoreWeave Ellendale ND,MISO
+Meta Sarpy,SPP
+CoreWeave Chester VA,PJM
+AWS Berwick,PJM
+CoreWeave Marble NC,Southeast (other)
+Core42 Lake Mariner,NYISO
+Microsoft SAT40,ERCOT
+STACK Infrastructure NVA02,PJM
+Microsoft-Nebius New Jersey,PJM
+Stream Phoenix,West (non-RTO)
+Microsoft SAT14,ERCOT
+Vantage TX1,ERCOT
+CoreWeave Dalton 1 & 2,Southeast (Southern Co.)
+xAI QTS Atlanta,Southeast (Southern Co.)
+Anthropic Barber Lake,ERCOT
+CoreWeave Lancaster Greenfield site,PJM
+CoreWeave Muskogee OK,SPP
+Crusoe Abilene Expansion,ERCOT
+Goodnight,SPP
+Google Cedar Rapids,MISO
+Google Fort Wayne,PJM
+Meta Bowling Green,PJM
+Meta Hyperion,MISO
+OpenAI Stargate Lordstown,PJM
+OpenAI Stargate Michigan,MISO
+OpenAI Stargate Milam,ERCOT
+OpenAI Stargate New Mexico,West (non-RTO)
+OpenAI Stargate Shackelford,ERCOT
+OpenAI Stargate Wisconsin,MISO
+QTS Cedar Rapids,MISO
+QTS Eagle Mountain,West (non-RTO)

@@ -1,0 +1,97 @@
+name,owner,users,country,address,lat,lon,geocode,current_power_mw,current_h100e,planned_power_mw,planned_water_mgd,planned_h100e,first_date,last_date,grid_region
+Colossus 2,SpaceXAI,"Anthropic, Cursor, SpaceXAI",United States,"5420 Tulane Rd, Memphis, TN 38109",34.9979829,-90.0348674,address,946.0,1111672.5618999496,2065.0,,1824153.6129358264,2025-02-28,2027-02-25,Southeast (TVA)
+OpenAI Stargate Abilene,Oracle,OpenAI,United States,"5502 Spinks Rd, Abilene, TX 79601",32.4942321,-99.8009071,address,824.0,1018696.3112683172,1154.0,,1018696.3112683172,2024-05-31,2026-11-01,ERCOT
+Anthropic-Amazon New Carlisle,Amazon,Anthropic,United States,"55001 Larrison Blvd, New Carlisle, IN 46552",41.7056871,-86.5098231,locality,1037.0,818428.4992420415,2310.0,21.0,1746038.4032339563,2024-02-09,2028-03-17,PJM
+Microsoft Fairwater Atlanta,Microsoft,"OpenAI, Microsoft",United States,"1435 Hwy 54 W, Fayetteville, GA 30214",33.4453541,-84.5254819,address,636.0,768768.7220818596,859.0,,768768.7220818596,2023-04-09,2026-06-14,Southeast (Southern Co.)
+Google Pryor (North),Google,Google DeepMind,United States,"4581 Webb St, Pryor, OK 74361",36.2411721,-95.3300473,address,368.0,636685.1945426983,442.0,2.282739726,636685.1945426983,2024-07-19,2026-09-06,SPP
+DayOne Nusajaya,,,Malaysia,,1.43,103.63,manual,473.0,583836.7862556847,662.0,,583836.7862556847,2023-10-01,2026-10-02,
+Meta Prometheus,Meta,Meta,United States,"1 Community Cir, New Albany, OH 43054",40.0811745,-82.8087864,locality,471.0,536343.0015159171,1328.0,,1164336.5841334006,2022-04-14,2028-07-01,PJM
+DayOne Kempas,,,Malaysia,"HP79+MP, 81300 Johor Bahru, Johor, Malaysia",1.3550319,103.6273961,locality,421.691664,480638.7064173825,590.3683296,,480638.7064173825,2023-11-11,2026-10-01,
+Microsoft Fairwater Wisconsin,Microsoft,"OpenAI, Microsoft",United States,"4800 90th St, Mount Pleasant, WI 53403",42.6748722,-87.8948822,address,369.0,445679.63617988885,2715.0,0.00771,4527539.161192521,2023-07-14,2028-05-13,MISO
+Google Columbus,Google,Google DeepMind,United States,"5076 S High St, Columbus, OH 43207",39.8614521,-83.0039995,address,303.0,331985.85144012125,464.0,,576048.5093481556,2021-10-01,2027-07-01,PJM
+Google New Albany,Google,Google DeepMind,United States,"1101 Beech Rd SW, New Albany, OH 43054",40.070051,-82.754042,address,333.0,323900.9600808489,400.0,0.966,323900.9600808489,2024-04-20,2026-05-18,PJM
+Anthropic Lake Mariner,AI XPV Platform,Anthropic,United States,"7725 Lake Rd, Barker, NY 14012",43.3586546,-78.604128,address,210.0,292829.71197574533,441.0,0.0,527084.3860535624,2025-06-11,2027-03-31,NYISO
+Google Mesa,Google,,United States,,33.31,-111.63,manual,183.0,289540.17180394137,237.0,,289540.17180394137,2023-07-01,2026-08-15,West (non-RTO)
+Colossus 1,SpaceXAI,Anthropic,United States,"3231 Riverport Rd, Memphis, TN 38109",35.0828472,-90.0763831,address,340.0,275795.85649317835,442.0,,275795.85649317835,2024-04-24,2026-06-15,Southeast (TVA)
+Google Council Bluffs (East),Google,Google DeepMind,United States,"10410 Bunge Ave, Council Bluffs, IA 51503",41.1666499,-95.7977408,address,237.0,255684.6892369884,284.0,,255684.6892369884,2022-09-06,2026-07-07,MISO
+CoreWeave Denton TX,CoreWeave,OpenAI,United States,"8171 Jim Christal Rd, Denton, TX 76207",33.2192732,-97.174715,address,262.0,252652.85497726125,395.0,,271854.4719555331,2024-11-01,2027-05-31,ERCOT
+QTS Richmond 1,,,United States,"6000 Technology Blvd, Sandston, VA 23150",37.4888273,-77.24749,address,238.0,242546.7407781708,333.0,,242546.7407781708,2023-10-01,2026-02-13,PJM
+Bridge Data Centres MY06,ByteDance,ByteDance,Malaysia,"Bridge Data Centres, Sedenak Tech Park, Johor, Malaysia",1.3550319,103.6273961,locality,243.0,221051.54118241536,315.0,,221051.54118241536,2021-10-01,2026-09-13,
+Meta Rosemount,Meta,Meta,United States,"1772-2396 145th St, Rosemount, MN 55068, USA",44.74,-93.13,manual,178.0,215675.11520970188,241.0,0.0,215675.11520970188,2024-05-01,2026-06-19,MISO
+Amazon Madison Mega Site,Amazon,Anthropic,United States,"Amazon Data Services Inc, Madison Mega Site Nissan Parkway and Highway 22 Canton, Mississippi Madison County",32.61,-90.04,manual,284.0,214348.14354550533,819.0,,514435.5445092117,2023-10-02,2028-03-15,MISO
+Google Bristow,Google,Google DeepMind,United States,"13001 Rollins Ford Road, Bristow, VA 20136",38.7311636,-77.5480241,locality,238.0,209860.5356240525,286.0,,209860.5356240525,2021-07-01,2026-05-20,PJM
+Microsoft Goodyear,Microsoft,"OpenAI, Microsoft",United States,"14250 W Broadway Rd, Goodyear, AZ 85338",33.4089905,-112.3647996,address,202.0,205154.1182415361,263.0,,205154.1182415361,2021-06-21,2026-04-27,West (non-RTO)
+Meta Jeffersonville,Meta,Meta,United States,"500 8th St, Jeffersonville, IN 47130, USA",38.3,-85.7,manual,178.0,203132.89540171804,241.0,0.0,203132.89540171804,2024-02-01,2026-06-04,MISO
+Google Kansas City East,Google,,United States,,39.16,-94.43,manual,105.0,202627.5896917635,126.0,,202627.5896917635,2024-01-01,2026-08-01,SPP
+Meta Temple,Meta,Meta,United States,"2310 Eberhardt Rd, Temple, TX 76504",31.1260165,-97.3600001,address,178.0,202472.98777125112,231.0,,202472.98777125112,2022-04-01,2026-09-30,ERCOT
+AWS New Albany,Amazon,,United States,13360 Miller Rd NW,40.1157846,-82.7390187,address,213.0,201111.6725619,405.0,,351692.77412834764,2022-07-01,2027-07-01,PJM
+Google Omaha,Google,Google DeepMind,United States,"11110 State St, Omaha, NE 68142",41.3356809,-96.0523625,address,237.0,198585.14401212733,474.0,0.088,904497.2208185951,2021-11-25,2028-07-23,SPP
+Google Lincoln,Google,,United States,"5475 Cloud Ct, Lincoln, NE 68514",40.907472,-96.6457832,address,141.0,197574.53259221828,339.0,,672056.5942395149,2023-07-01,2027-10-01,SPP
+QTS Richmond 2,,,United States,"6030–6070 Technology Blvd, Sandston, VA 23150",37.5234794,-77.3158118,locality,180.0,182920.66700353715,252.0,0.0,182920.66700353715,2022-04-01,2026-05-14,PJM
+Google The Dalles,Google,,United States,"3500 River Rd, The Dalles, OR",45.6253889,-121.2023887,address,154.0,175341.0813542193,185.0,,175341.0813542193,2023-05-21,2026-04-29,West (non-RTO)
+QTS Richmond 3,,,United States,"3525–3543 Portugee Rd, Sandston, VA 23150",37.5234794,-77.3158118,locality,144.0,174835.77564426477,336.0,,291056.08893380495,2024-04-01,2027-02-13,PJM
+Meta Montgomery,Meta,Meta,United States,"Co Rd 42, Montgomery, AL 36105, USA",32.37,-86.3,manual,153.0,174517.43304699342,465.0,0.0,407486.10409297625,2024-03-01,2027-02-23,Southeast (Southern Co.)
+Meta Kuna,Meta,Meta,United States,"601 Kuna Mora Rd,  Kuna ID 83634",43.49,-116.42,manual,152.0,173247.67205659422,198.0,0.07,173247.67205659422,2022-07-01,2026-06-01,West (non-RTO)
+Meta Cheyenne,Meta,Meta,United States,"Cheyenne, WY 82007, USA",41.14,-104.82,manual,152.0,172814.5528044467,249.0,0.0,235977.766548762,2024-04-01,2027-02-15,West (non-RTO)
+Amazon Ridgeland,Amazon,Anthropic,United States,"1626 County Line Road Ridgeland, Mississippi",32.4000327,-90.1971708,address,228.0,171298.6356745831,1008.0,,788276.907529055,2024-02-24,2028-09-29,MISO
+Meta Huntsville,Meta,Meta,United States,"5400 Prosperity Dr NW, Toney, AL",34.8981438,-86.7335699,locality,146.0,166760.9903991915,198.0,,166760.9903991915,2021-12-13,2026-06-02,Southeast (TVA)
+Coreweave Helios,CoreWeave,OpenAI,United States,"984 County Road 112, Afton, TX 79220",33.7628599,-100.8168001,locality,132.0,159551.768236855,800.0,,638207.072947418,2025-05-31,2029-01-01,ERCOT
+Microsoft Project Osmium,Microsoft,OpenAI,United States,"5855 SW Kerry St, Cumming, IA 50061",41.4833235,-93.7624442,locality,190.0,155634.15866599293,228.0,,155634.15866599293,2018-12-18,2026-06-16,MISO
+YTL Johor,,,Malaysia,"YTL Green Data Centers, Kulai, Johor, Malaysia",1.3550319,103.6273961,locality,113.0,153532.0869125821,389.0,,585421.9302678121,2023-11-01,2028-08-01,
+Meta Eagle Mountain,Meta,Meta,United States,"1275 N Community Cir, Eagle Mountain, UT 84005",40.3093488,-112.0119825,locality,133.0,151354.21930267813,179.0,,151354.21930267813,2023-10-01,2026-05-02,West (non-RTO)
+Meta Aiken,Meta,Meta,United States,"7601 State Hwy 105, Trenton, SC 29847, USA",33.74,-81.85,manual,129.0,147043.96159676605,168.0,0.0,147043.96159676605,2024-05-30,2026-11-05,Southeast (other)
+Google Midlothian,Google,,United States,"3250 Railport Parkway, Midlothian, TX 76065",32.438927,-97.0507991,address,103.0,143580.85118746842,123.0,,143580.85118746842,2023-11-28,2026-07-01,ERCOT
+Google Storey County,Google,Google DeepMind,United States,,39.53,-119.47,manual,161.0,133906.01313794847,389.0,0.0005,540677.109651339,2023-08-30,2027-06-30,West (non-RTO)
+Meta Los Lunas,Meta,Meta,United States,"4250 Messenger Lp, Los Lunas, NM 87031",34.8301645,-106.7838267,address,118.0,133906.01313794847,273.0,0.0,869125.8211217787,2024-07-24,2028-01-01,West (non-RTO)
+Google Lancaster,Google,,United States,"105 Whiley Rd, Lancaster, OH 43130",39.7270407,-82.6831433,address,137.0,130368.8731682668,164.0,,130368.8731682668,2021-10-01,2026-03-12,PJM
+Meta-QTS Hillsboro 2,Meta,Meta,United States,"4755 NE Huffman St, Hillsboro, OR 97124",45.5588758,-122.9296051,address,180.0,123839.0,243.0,,123839.0,2021-04-01,2026-04-17,West (non-RTO)
+Google Waltham Cross,Google,Google DeepMind,United Kingdom,"Land at Maxwell's Farm West, Great Cambridge Road, Cheshunt, EN8 8XH",51.702052,-0.0335908,locality,88.0,123799.898938858,124.0,,123799.898938858,2024-01-01,2026-04-23,
+VNET Bayin Ulanqab,ByteDance,ByteDance,China,"Bayin, Ulanqab, China",41.03,113.13,manual,221.0,122789.28751894896,798.0,,388074.78524507326,2024-03-15,2027-09-01,
+Google Arcola,Google,,United States,"42575 Arcola Blvd, Sterling, VA 20166",39.0017455,-77.4033349,locality,77.0,108135.4219302678,93.0,,108135.4219302678,2024-10-01,2026-06-16,PJM
+Google Red Oak,Google,,United States,"330 Austin Blvd, Red Oak, TX 75154",32.5376266,-96.7966747,address,77.0,108135.4219302678,185.0,,279434.0576048509,2023-04-30,2026-12-01,ERCOT
+Google Papillion,Google,Google DeepMind,United States,"14651-15249 Gold Coast Rd 68138 Papillion Nebraska, USA",41.13,-96.07,manual,237.0,100555.83628094998,284.0,0.088,100555.83628094998,2020-03-04,2026-05-04,SPP
+Meta Gallatin,Meta,Meta,United States,"1 Meta Lp, Gallatin, TN 37066",36.3883031,-86.4475898,locality,87.0,99545.22486104092,114.0,0.0,99545.22486104092,2023-09-11,2026-08-24,Southeast (TVA)
+Huawei Wuhu,Huawei,,China,"Wuhu, China",31.33,118.43,manual,199.0,96537.6452753916,526.0,0.0,221923.6988377969,2023-01-01,2027-12-01,
+CoreWeave Ellendale ND,CoreWeave,OpenAI,United States,"9685 87th Ave SE, Ellendale, ND 58436",46.0214191,-98.5685326,address,68.0,93481.55634158666,520.0,0.0,505305.7099545225,2023-10-31,2027-06-01,MISO
+Meta Sarpy,Meta,Meta,United States,"14436-14998 Fairview Rd, Springfield, NE 68059, USA",41.08,-96.13,manual,80.0,91965.63921172309,105.0,0.0,91965.63921172309,2024-08-01,2026-08-02,SPP
+Huawei Horinger,Huawei,,China,"Huawei, Horinger, China",40.38,111.82,manual,184.3,89439.11066195049,414.6,0.0,168107.6301162203,2023-10-08,2028-02-14,
+CoreWeave Chester VA,CoreWeave,OpenAI,United States,"1401 Meadowville Technology Parkway, Chester, VA",37.3489475,-77.438379,locality,82.0,88428.49924204143,197.0,,125821.1217786761,2023-09-18,2027-06-30,PJM
+Oracle Batam,Oracle,Tencent,Indonesia,,1.08,104.03,manual,72.0,84386.05356240526,94.0,,84386.05356240526,2022-07-01,2026-05-06,
+AWS Berwick,Amazon,Anthropic,United States,"1125 Electron Ave, Berwick, PA 18603",41.0838485,-76.1435333,address,108.0,81354.21930267812,212.0,0.129,145022.73875694795,2021-07-01,2027-08-01,PJM
+CoreWeave Marble NC,CoreWeave,OpenAI,United States,"155 Palmer Ln, Marble, NC 28905",35.1849883,-83.9141225,address,65.0,78827.6907529055,91.0,,78827.6907529055,2024-06-25,2026-05-06,Southeast (other)
+Core42 Lake Mariner,Core42,G42,United States,"7725 Lake Rd, Barker, NY 14012",43.3586546,-78.604128,address,58.0,71753.4108135422,58.0,0.0,71753.4108135422,2024-10-01,2026-07-23,NYISO
+Microsoft SAT40,Microsoft,,United States,"15000 Lambda Drive, San Antonio, TX 78245",29.4246002,-98.4951405,locality,75.0,64679.13087417888,106.0,,64679.13087417888,2018-12-28,2026-02-04,ERCOT
+STACK Infrastructure NVA02,,,United States,"9590 Hornbaker Rd, Manassas, VA 20109",38.7458055,-77.5377246,address,85.0,61141.99090449722,487.0,,250631.63213744317,2019-10-19,2028-01-01,PJM
+Microsoft-Nebius New Jersey,Nebius,Microsoft,United States,"3963 S Lincoln Ave, Vineland, New Jersey",39.4281965,-75.0184096,address,50.0,56846.89236988378,70.0,,56846.89236988378,2024-05-31,2026-07-12,PJM
+CoreWeave Norway,CoreWeave,OpenAI,Norway,"Stølevegen 39, 4715 Øvrebø, Norway",58.32,7.86,manual,42.0,50773.11773623042,55.0,,50773.11773623042,2024-01-23,2026-08-15,
+Nebius Mantsala,Nebius,Microsoft,Finland,,60.63,25.32,manual,75.0,48527.92066700354,196.0,,226233.83274381,2024-10-08,2027-12-31,
+Envision Galaxy Ulanqab,,,China,,41.0,113.13,manual,118.0,47931.27842344619,612.0,,169868.62051541184,2025-08-01,2027-12-01,
+Southgate Melbourne,Firmus,,Australia,,-37.82,144.85,manual,41.0,46488.12531581607,57.0,,46488.12531581607,2022-12-26,2026-08-09,
+Stream Phoenix,,,United States,2950 S. Litchfield Road,33.4194907,-112.3599884,address,64.0,46134.4113188479,267.0,0.0,160181.91005558363,2022-10-30,2030-01-01,West (non-RTO)
+Microsoft SAT14,Microsoft,,United States,"3545 Wiseman Boulevard, San Antonio, TX 78251",29.4728631,-98.681767,address,47.0,45174.33046993431,66.0,,45174.33046993431,2022-02-18,2026-03-31,ERCOT
+Vantage TX1,,,United States,"14720 Omicron Dr, San Antonio, TX 78245",29.4168571,-98.7901875,address,32.0,38706.417382516425,179.2,,154623.54724608388,2023-12-15,2027-08-31,ERCOT
+CoreWeave Dalton 1 & 2,CoreWeave,OpenAI,United States,"2205 Industrial South Rd, Dalton, GA, 30721",34.7134428,-84.9521507,address,28.0,32238.504295098533,40.0,,32238.504295098533,2024-06-03,2026-02-20,Southeast (Southern Co.)
+Alibaba Zhangbei,Alibaba,Alibaba,China,"Alibaba Zhangbei Yun Calculation Data Center, Zhangbei County, Zhangjiakou, Hebei, China, 076471",41.16,114.7,manual,169.0,31884.79029813037,203.0,,31884.79029813037,2024-07-23,2026-01-03,
+Start Campus Sines Data Campus,Nscale,Microsoft,Portugal,"Start Campus - Sustainable Data Center Services, Sines, Portugal",37.95,-8.87,manual,33.0,31834.259727134915,280.0,,540677.109651339,2022-01-01,2027-09-30,
+xAI QTS Atlanta,SpaceXAI,SpaceXAI,United States,"1025 Jefferson Street NW, Atlanta, GA 30318",33.7771892,-84.4195499,address,17.32971,11470.43961596766,24.0,,11470.43961596766,2024-01-23,2026-07-10,Southeast (Southern Co.)
+Nscale Keflavik,Nscale,,Iceland,"Valhallarbraut 868, 262 Reykjanesbær, Iceland",63.98,-22.56,manual,5.11,5821.121778676099,13.28,,11642.243557352198,2022-07-08,2026-12-31,
+Anthropic Barber Lake,Cipher Mining,Anthropic,United States,,32.39,-100.86,manual,0.0,0.0,300.0,,288529.5603840323,2025-09-18,2027-04-30,ERCOT
+CoreWeave Lancaster Greenfield site,CoreWeave,OpenAI,United States,"216 Greenfield Rd, Lancaster, PA",40.0472199,-76.2555314,address,0.0,0.0,124.0,,232945.93228903488,2025-07-15,2027-06-30,PJM
+CoreWeave Muskogee OK,CoreWeave,OpenAI,United States,"1525 W 43rd St S, Muskogee, OK 74401, USA",35.71,-95.38,manual,0.0,0.0,181.0,,198079.8383021728,2024-11-18,2027-12-31,SPP
+Crusoe Abilene Expansion,Microsoft,Microsoft,United States,"5502 Spinks Rd, Abilene, TX 79601",32.4942321,-99.8009071,address,0.0,0.0,941.0,,1707933.299646286,2025-11-02,2027-11-11,ERCOT
+EcoDataCenter 2,Mistral AI,Mistral AI,Sweden,"Kvarnsvedsvägen 420, 784 66 Borlänge, Sweden",60.48,15.43,manual,0.0,0.0,67.0,,138912.3294593229,2025-09-01,2028-06-30,
+Goodnight,Google,Google DeepMind,United States,"10001 Lima Rd, Claude, TX 79019",35.1081103,-101.362741,locality,0.0,0.0,1294.1,,2278928.7518948964,2025-05-19,2027-10-01,SPP
+Google Cedar Rapids,Google,Google DeepMind,United States,"5800 EDGEWOOD RD SW CEDAR RAPIDS, IA 52404",41.9221755,-91.7156674,address,0.0,0.0,314.0,,670136.4325416877,2024-06-14,2027-05-23,MISO
+Google Fort Wayne,Google,Google DeepMind,United States,"6015 Adams Center Road, Fort Wayne, IN 46806",41.0309293,-85.0536261,address,0.0,0.0,1035.0,,2940879.231935321,2024-04-01,2028-06-23,PJM
+Meta Bowling Green,Meta,Meta,United States,"12356 Middleton Pike, Bowling Green, OH 43402",41.3747744,-83.6513229,locality,0.0,0.0,570.0,,855159.1712986357,2024-11-01,2028-01-01,PJM
+Meta Hyperion,Meta,Meta,United States,"Holly Ridge, LA 71269",32.4676421,-91.6267883,address,0.0,0.0,2203.0,,4142944.416371905,2024-12-20,2028-01-01,MISO
+Microsoft Narvik Norway,Nscale,Microsoft,Norway,,68.44,17.43,manual,0.0,0.0,124.0,,265285.4977261243,2023-07-01,2026-12-31,
+OpenAI Stargate Lordstown,Softbank,OpenAI,United States,"2300 Hallock Young Rd, Warren, OH 44481",41.2367955,-80.8190423,locality,0.0,0.0,300.0,,545730.1667508843,2025-10-12,2027-03-01,PJM
+OpenAI Stargate Michigan,Oracle,OpenAI,United States,,42.15,-83.82,manual,0.0,0.0,1383.0,,2880242.5467407783,2025-12-04,2028-12-31,MISO
+OpenAI Stargate Milam,Softbank,OpenAI,United States,,30.66,-97.0,manual,0.0,0.0,1200.0,,2496210.207175341,2025-09-27,2028-12-31,ERCOT
+OpenAI Stargate New Mexico,Oracle,OpenAI,United States,,31.86,-106.7,manual,0.0,0.0,2450.0,0.02,5103587.670540676,2025-10-01,2028-12-31,West (non-RTO)
+OpenAI Stargate Shackelford,Oracle,OpenAI,United States,"175 Private Road 1604, Abilene, TX 79601, Shackelford County",32.5965642,-99.5020877,locality,0.0,0.0,1960.0,,4562910.560889338,2025-08-01,2028-11-11,ERCOT
+OpenAI Stargate UAE,G42,OpenAI,United Arab Emirates,"Nexus L&T Project Office, Al Bihouth, Al Dhafrah, Abu Dhabi, United Arab Emirates",24.25,54.55,manual,0.0,0.0,1400.0,,2021222.83981809,2025-06-09,2028-01-01,
+OpenAI Stargate Wisconsin,Oracle,OpenAI,United States,,43.39,-87.88,manual,0.0,0.0,1300.0,,2627589.691763517,2026-01-02,2028-12-31,MISO
+QTS Cedar Rapids,Meta,Meta,United States,"6200 76th Ave SW, Fairfax, IA 52228",41.9056197,-91.7509874,address,0.0,0.0,1587.0,,2250548.600358449,2025-01-17,2027-11-15,MISO
+QTS Eagle Mountain,Meta,Meta,United States,"652 E Hyperscale Way, Eagle Mountain, UT 84013",40.2688855,-112.0342942,address,0.0,0.0,411.0,,346968.16574027285,2023-10-01,2027-07-01,West (non-RTO)

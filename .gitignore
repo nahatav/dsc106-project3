@@ -1,0 +1,11 @@
+data/raw/cmip6/
+data/raw/dc_zip/
+data/raw/*.zip
+data/raw/*.log
+__pycache__/
+docs/data/summers/
+docs/data/calendar/
+docs/data/fields/
+docs/hero-render.html
+docs/hero.png
+data/raw/global/
