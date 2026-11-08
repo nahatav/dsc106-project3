@@ -20,7 +20,7 @@ const TOUR = ["Colossus 2", "OpenAI Stargate Abilene", "Microsoft Fairwater Wisc
 const DOE_SITES = [
   { name: "Idaho National Laboratory", lat: 43.52, lon: -112.95, dx: 12, dy: 4, anchor: "start" },
   { name: "Oak Ridge Reservation", lat: 35.93, lon: -84.31, dx: 12, dy: 4, anchor: "start" },
-  { name: "Paducah site", lat: 37.11, lon: -88.80, dx: -12, dy: -8, anchor: "end" },
+  { name: "Paducah", lat: 37.11, lon: -88.80, dx: -12, dy: -8, anchor: "end" },
   { name: "Savannah River Site", lat: 33.25, lon: -81.65, dx: 12, dy: 10, anchor: "start" },
 ];
 const ACCENT = "#a8203b";
@@ -193,82 +193,159 @@ const ownerOf = d => (/Stargate/.test(d.name) ? "OpenAI" : d.owner === "SpaceXAI
 const REGION_LABEL_AT = { West: [-40, 20], SPP: [0, -6], ERCOT: [10, 22], MISO: [-34, -40], PJM: [10, -58], Southeast: [10, 46], NYISO: [6, -16] };
 const Fleet = {
   init() {
-    const W = 975, H = 690, svg = (this.svg = d3.select("#fleetmap").attr("viewBox", `0 0 ${W} ${H}`)), path = d3.geoPath();
+    const W = 975, MH = 610, H = 840, svg = (this.svg = d3.select("#fleetmap").attr("viewBox", `0 0 ${W} ${H}`)), path = (this.path = d3.geoPath());
+    this.W = W; this.MH = MH; this.view = [W / 2, MH / 2, W]; this.k = 1; this.co = null; this.zr = null;
     const lower48 = D.topo.objects.states.geometries.filter(g => !["02", "15"].includes(g.id));
     const regionOf = new Map(Object.entries(D.reg.states).flatMap(([r, ss]) => ss.map(st => [st, r])));
     const ser = new Map(D.build.sites.map(b => [b.name, b.s]));
-    this.months = D.build.months;
+    this.months = D.build.months; this.m0 = this.months.indexOf("2023-01");
     this.sites = D.us.map(d => ({ ...d, co: ownerOf(d), s: ser.get(d.name) || [], on: 0 })).sort((p, q) => q.power - p.power);
     this.regs = Object.keys(D.reg.states).map(r => ({ name: r, shape: topojson.merge(D.topo, lower48.filter(g => regionOf.get(g.properties.name) === r)), sites: this.sites.filter(d => d.region === r) }));
-    // basemap: grid regions as faint washes of their Figure 4 colours
-    svg.append("path").datum(G.nation).attr("d", path).attr("fill", WARMGREY);
-    this.wash = svg.append("g").selectAll("path").data(this.regs).join("path").attr("d", r => path(r.shape)).attr("fill", r => REGION_COLOR[r.name]).attr("fill-opacity", 0.1);
-    svg.append("path").datum(G.states).attr("d", path).attr("fill", "none").attr("stroke", "#fff").attr("stroke-width", 0.7).style("pointer-events", "none");
-    svg.append("g").style("pointer-events", "none").selectAll("path").data(this.regs).join("path").attr("d", r => path(r.shape)).attr("fill", "none").attr("stroke", "#fff").attr("stroke-width", 2.4);
-    svg.append("g").style("pointer-events", "none").selectAll("text").data(this.regs).join("text").attr("class", "region-label")
-      .attr("transform", r => { const [cx, cy] = path.centroid(r.shape), o = REGION_LABEL_AT[r.name] || [0, 0]; return `translate(${cx + o[0]},${cy + o[1]})`; }).attr("text-anchor", "middle").text(r => r.name);
-    // sites: a thin ring at planned size, a disc that grows as power comes online
     const r = (this.r = d3.scaleSqrt().domain([0, 2800]).range([0, 19]));
-    const sg = svg.append("g").style("pointer-events", "none").selectAll("g").data(this.sites).join("g").attr("transform", d => `translate(${d.xy[0]},${d.xy[1]})`);
-    this.sg = sg;
-    sg.append("circle").attr("r", d => Math.max(2.5, r(d.power))).attr("fill", "#fff").attr("fill-opacity", 0.55).attr("stroke", "#8d877f").attr("stroke-width", 0.8);
-    this.discs = sg.append("circle").attr("fill", ACCENT).attr("fill-opacity", 0.85).attr("stroke", "#fff").attr("stroke-width", 0.7).attr("r", 0);
-    this.pulses = svg.append("g").style("pointer-events", "none");
-    this.hl = svg.append("circle").attr("fill", "none").attr("stroke", INK).attr("stroke-width", 2).style("pointer-events", "none").attr("opacity", 0);
-    // hover a site or a region; click a site to open it in Figure 2
-    const del = d3.Delaunay.from(this.sites, d => d.xy[0], d => d.xy[1]);
-    const nearest = e => { const [mx, my] = d3.pointer(e, svg.node()), d = this.sites[del.find(mx, my)]; return Math.hypot(d.xy[0] - mx, d.xy[1] - my) < Math.max(14, r(d.power) + 6) ? d : null; };
-    svg.on("mousemove", e => {
-      const d = nearest(e), reg = d ? this.regs.find(g => g.name === d.region) : d3.select(e.target).datum();
-      if (d) { this.hl.attr("opacity", 1).attr("cx", d.xy[0]).attr("cy", d.xy[1]).attr("r", Math.max(4, r(d.power)) + 3); svg.style("cursor", "pointer"); showTip(e, this.siteTip(d)); }
-      else { this.hl.attr("opacity", 0); svg.style("cursor", null); if (reg && reg.shape) showTip(e, this.regTip(reg)); else hideTip(); }
-      this.focusRegion(reg && reg.shape ? reg.name : null);
-    }).on("mouseleave", () => { hideTip(); this.hl.attr("opacity", 0); this.focusRegion(null); })
-      .on("click", e => { const d = nearest(e); if (!d) return; hideTip(); Reach.picked = true; Reach.stopTour(); Reach.pin = d.name; Reach.show(d.name, true); document.getElementById("reach").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" }); });
-    // company filter
-    const cos = d3.rollups(this.sites, a => d3.sum(a, d => d.power), d => d.co).filter(c => c[0] !== "Other").sort((p, q) => q[1] - p[1]).map(c => c[0]);
+
+    // ---- map ----
+    svg.append("clipPath").attr("id", "fm-clip").append("rect").attr("width", W).attr("height", MH);
+    const outer = svg.append("g").attr("clip-path", "url(#fm-clip)");
+    outer.append("rect").attr("width", W).attr("height", MH).attr("fill", "#fff").on("click", () => this.zoomTo(null));
+    const g = (this.g = outer.append("g"));
+    g.append("path").datum(G.nation).attr("d", path).attr("fill", WARMGREY);
+    g.append("g").selectAll("path").data(this.regs).join("path").attr("d", d => path(d.shape)).attr("fill", "transparent").style("cursor", "zoom-in")
+      .on("mousemove", (e, d) => { this.outline(d); showTip(e, this.regTip(d)); }).on("mouseleave", () => { this.outline(null); hideTip(); })
+      .on("click", (e, d) => { hideTip(); this.zoomTo(this.zr === d.name ? null : d); });
+    const thin = sel => sel.attr("fill", "none").attr("vector-effect", "non-scaling-stroke").style("pointer-events", "none");
+    g.append("path").datum(G.states).attr("d", path).call(thin).attr("stroke", "#fff").attr("stroke-width", 0.8);
+    g.append("path").datum(topojson.mesh(D.topo, { type: "GeometryCollection", geometries: lower48 }, (x, y) => x !== y && regionOf.get(x.properties.name) !== regionOf.get(y.properties.name)))
+      .attr("d", path).call(thin).attr("stroke", "#a9a198").attr("stroke-width", 1.3);
+    this.regLine = g.append("path").call(thin).attr("stroke", INK).attr("stroke-width", 1.8);
+    this.regLabels = g.append("g").style("pointer-events", "none").selectAll("text").data(this.regs).join("text").attr("class", "region-label").attr("text-anchor", "middle").text(d => d.name);
+    this.regLabels.each(function (d) { const [cx, cy] = path.centroid(d.shape), o = REGION_LABEL_AT[d.name] || [0, 0]; d.lx = cx + o[0]; d.ly = cy + o[1]; });
+    this.labelPx = parseFloat(getComputedStyle(this.regLabels.node()).fontSize);
+    this.sg = g.append("g").selectAll("g").data(this.sites).join("g").style("cursor", "pointer")
+      .on("mouseenter", (e, d) => { this.outline(this.regs.find(x => x.name === d.region)); this.hover = d; this.drawNames(); })
+      .on("mousemove", (e, d) => showTip(e, this.siteTip(d)))
+      .on("mouseleave", () => { this.outline(null); this.hover = null; this.drawNames(); hideTip(); })
+      .on("click", (e, d) => { e.stopPropagation(); hideTip(); Reach.picked = true; Reach.stopTour(); Reach.pin = d.name; Reach.show(d.name, true); document.getElementById("reach").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" }); });
+    this.hit = this.sg.append("circle").attr("fill", "transparent");
+    this.ring = this.sg.append("circle").attr("fill", "#fff").attr("stroke", "#8d877f").attr("vector-effect", "non-scaling-stroke").attr("stroke-width", 0.8);
+    this.disc = this.sg.append("circle").attr("fill", INK).attr("stroke", "#fff").attr("vector-effect", "non-scaling-stroke").attr("stroke-width", 0.7).attr("r", 0);
+    this.pulses = g.append("g").style("pointer-events", "none");
+    this.names = g.append("g").style("pointer-events", "none");
+    this.back = svg.append("g").attr("transform", `translate(16,16) scale(${window.innerWidth < 600 ? 1.9 : 1})`).style("cursor", "pointer").attr("opacity", 0).style("pointer-events", "none").on("click", () => this.zoomTo(null));
+    this.back.append("rect").attr("width", 118).attr("height", 32).attr("rx", 16).attr("fill", "#fff").attr("stroke", "#dadce0");
+    this.back.append("text").attr("class", "fm-back").attr("x", 59).attr("y", 21).attr("text-anchor", "middle").text("Whole country");
+
+    // ---- company filter ----
+    const cos = d3.rollups(this.sites, x => d3.sum(x, d => d.power), d => d.co).filter(c => c[0] !== "Other").sort((p, q) => q[1] - p[1]).map(c => c[0]);
     d3.select("#fleet-co").selectAll("button").data([null, ...cos]).join("button").text(c => c || "All").classed("on", c => !c)
-      .on("click", (e, c) => { this.co = c; d3.selectAll("#fleet-co button").classed("on", x => x === c); sg.transition().duration(350).attr("opacity", d => (!c || d.co === c ? 1 : 0.12)); });
-    // timeline
-    const x = (this.x = d3.scaleLinear().domain([2023, 2031]).range([150, 835]).clamp(true)), tl = svg.append("g").attr("transform", `translate(0,${H - 46})`);
-    tl.append("line").attr("x1", x.range()[0]).attr("x2", x.range()[1]).attr("stroke", "#e4e0da").attr("stroke-width", 3).attr("stroke-linecap", "round");
-    this.prog = tl.append("line").attr("x1", x.range()[0]).attr("stroke", ACCENT).attr("stroke-width", 3).attr("stroke-linecap", "round");
-    tl.selectAll(".tk").data(d3.range(2023, 2032)).join("line").attr("x1", x).attr("x2", x).attr("y1", -4).attr("y2", 4).attr("stroke", "#c9c3bb");
-    tl.selectAll(".tl").data(d3.range(2023, 2031)).join("text").attr("class", "flow-tick").attr("x", y => x(y + 0.5)).attr("y", 24).attr("text-anchor", "middle").text(y => y);
-    this.date = tl.append("text").attr("class", "flow-date").attr("y", -16).attr("text-anchor", "middle");
-    this.head = tl.append("circle").attr("r", 7).attr("fill", "#fff").attr("stroke", ACCENT).attr("stroke-width", 2.5);
-    const btn = tl.append("g").attr("transform", `translate(${x.range()[0] - 42},0)`).style("cursor", "pointer").on("click", e => { e.stopPropagation(); this.timer ? this.pause() : this.play(); });
-    btn.append("circle").attr("r", 15).attr("fill", INK);
+      .on("click", (e, c) => { this.co = c; d3.selectAll("#fleet-co button").classed("on", x => x === c); this.sg.transition().duration(350).attr("opacity", d => (this.match(d) ? 1 : 0.1)); this.drawArea(true); this.drawNames(); });
+
+    // ---- capacity over time, which doubles as the timeline ----
+    const rp = window.innerWidth < 600 ? 100 : 64, ax = (this.ax = d3.scaleLinear().domain([0, 95]).range([120, W - rp])), top = MH + 56, bot = H - 40;
+    this.ay = d3.scaleLinear().range([bot, top]);
+    const tl = svg.append("g");
+    this.yAxis = tl.append("g").attr("class", "fm-axis").attr("transform", `translate(${W - rp},0)`);
+    tl.append("g").attr("class", "fm-axis").attr("transform", `translate(0,${bot})`)
+      .call(d3.axisBottom(ax).tickValues(d3.range(8).map(y => y * 12 + 6)).tickFormat((v, i) => 2023 + i).tickSize(0)).call(x => x.select(".domain").attr("stroke", "#c9c3bb")).selectAll("text").attr("dy", "1.3em");
+    tl.selectAll(".yr").data(d3.range(1, 8)).join("line").attr("x1", y => ax(y * 12 - 0.5)).attr("x2", y => ax(y * 12 - 0.5)).attr("y1", bot).attr("y2", bot + 5).attr("stroke", "#c9c3bb");
+    svg.append("clipPath").attr("id", "fm-reveal").append("rect").attr("y", top - 30).attr("height", bot - top + 30).attr("x", ax.range()[0]);
+    this.reveal = svg.select("#fm-reveal rect");
+    this.areaAll = tl.append("path").attr("fill", "#e7e3de");
+    this.areaOn = tl.append("path").attr("fill", INK).attr("fill-opacity", 0.86).attr("clip-path", "url(#fm-reveal)");
+    this.play_line = tl.append("line").attr("y1", top - 6).attr("y2", bot).attr("stroke", ACCENT).attr("stroke-width", 1.5);
+    this.play_dot = tl.append("circle").attr("r", 4.5).attr("fill", ACCENT).attr("stroke", "#fff").attr("stroke-width", 1.5);
+    this.date = tl.append("text").attr("class", "flow-date").attr("y", top - 14).attr("text-anchor", "middle");
+    const btn = tl.append("g").attr("transform", `translate(64,${(top + bot) / 2})`).style("cursor", "pointer").on("click", () => (this.timer ? this.pause() : this.play()));
+    btn.append("circle").attr("r", 17).attr("fill", INK);
     this.icon = btn.append("path").attr("fill", "#fff");
-    tl.append("rect").attr("x", x.range()[0] - 10).attr("width", x.range()[1] - x.range()[0] + 20).attr("y", -16).attr("height", 46).attr("fill", "transparent").style("cursor", "ew-resize")
-      .on("mousemove", e => e.stopPropagation()).call(d3.drag().on("start drag", e => { this.pause(); this.set(x.invert(e.x)); }));
-    this.set(2023); this.setIcon(false);
-    onVisible("#fleetmap", () => (reduceMotion ? this.set(2031) : this.play()), 0.45);
+    tl.append("rect").attr("x", ax.range()[0] - 8).attr("width", ax.range()[1] - ax.range()[0] + 16).attr("y", top - 30).attr("height", bot - top + 44).attr("fill", "transparent").style("cursor", "ew-resize")
+      .on("mousemove", e => { const m = Math.round(ax.invert(d3.pointer(e)[0])), v = this.series()[Math.max(0, Math.min(95, m))]; showTip(e, `<b>${this.fmtMonth(m)}</b><br>${fmtGW(v)} online${this.scope()}`); })
+      .on("mouseleave", hideTip)
+      .call(d3.drag().on("start drag", e => { this.pause(); this.set(Math.max(0, Math.min(95, ax.invert(e.x)))); }));
+
+    this.apply(this.view); this.drawArea(false); this.set(0); this.setIcon(false);
+    onVisible("#fleetmap", () => (reduceMotion ? this.set(95) : this.play()), 0.4);
   },
-  idx() { return Math.max(0, Math.min(this.months.length - 1, Math.floor((this.t - 2022) * 12) - 1)); },
-  when() { return d3.timeFormat("%B %Y")(d3.timeParse("%Y-%m")(this.months[this.idx()])); },
+  match(d) { return (!this.co || d.co === this.co) && (!this.zr || d.region === this.zr); },
+  scope() { return (this.co ? ` for ${this.co}` : "") + (this.zr ? ` in ${this.zr}` : ""); },
+  series() { const ss = this.sites.filter(d => this.match(d)); return d3.range(96).map(m => d3.sum(ss, d => Math.min(d.power, d.s[this.m0 + m] || 0))); },
+  fmtMonth(m) { return d3.timeFormat("%b %Y")(d3.timeParse("%Y-%m")(this.months[this.m0 + Math.round(m)])); },
+  drawArea(animate) {
+    const v = this.series(), max = Math.max(500, d3.max(v));
+    this.ay.domain([0, max]).nice(3);
+    const area = d3.area().x((d, i) => this.ax(i)).y0(this.ay(0)).y1(d => this.ay(d)).curve(d3.curveMonotoneX)(v);
+    const t = sel => (animate ? sel.transition().duration(600).ease(ease) : sel);
+    t(this.areaAll).attr("d", area); t(this.areaOn).attr("d", area);
+    t(this.yAxis).call(d3.axisRight(this.ay).ticks(3).tickFormat(x => (x === 0 ? "" : x / 1000 + " GW")).tickSize(-(this.ax.range()[1] - this.ax.range()[0])))
+      .on("end", () => {});
+    this.yAxis.call(x => x.select(".domain").remove()).call(x => x.selectAll(".tick line").attr("stroke", "#eceae6")).call(x => x.selectAll("text").attr("dx", 6));
+    this.vals = v; if (this.m != null) this.set(this.m);
+  },
+  set(m) {
+    const playing = !!this.timer; this.m = m; const i = this.m0 + Math.floor(m), x = this.ax(m);
+    this.sites.forEach(d => { const was = d.on; d.on = Math.min(d.power, d.s[i] || 0); if (playing && was === 0 && d.on > 0 && this.match(d)) this.pulse(d); });
+    this.sizes();
+    this.reveal.attr("width", x - this.ax.range()[0]);
+    const v = this.vals[Math.floor(m)] || 0;
+    this.play_line.attr("x1", x).attr("x2", x); this.play_dot.attr("cx", x).attr("cy", this.ay(v));
+    this.date.attr("x", Math.min(x, this.ax.range()[1] - 26)).text(this.fmtMonth(m));
+  },
+  sizes() {
+    const k = this.k, sc = Math.pow(k, 0.45) / k, r = this.r;
+    this.ring.attr("r", d => Math.max(2.5, r(d.power)) * sc);
+    this.hit.attr("r", d => Math.max(9 / k, Math.max(2.5, r(d.power)) * sc + 3 / k));
+    this.disc.attr("r", d => (d.on > 0 ? Math.max(2, r(d.on)) * sc : 0));
+  },
+  apply(v) {
+    const W = this.W, MH = this.MH, k = (this.k = W / v[2]);
+    this.view = v;
+    this.g.attr("transform", `translate(${W / 2 - v[0] * k},${MH / 2 - v[1] * k}) scale(${k})`);
+    this.sg.attr("transform", d => `translate(${d.xy[0]},${d.xy[1]})`);
+    this.regLabels.attr("x", d => d.lx).attr("y", d => d.ly).style("font-size", this.labelPx / k + "px").style("stroke-width", 3 / k + "px").attr("opacity", d => (!this.zr || d.name === this.zr ? 1 : 0.5));
+    this.sizes();
+  },
+  zoomTo(reg) {
+    const W = this.W, MH = this.MH;
+    let target = [W / 2, MH / 2, W];
+    if (reg) { const [[x0, y0], [x1, y1]] = this.path.bounds(reg.shape), k = Math.min(4, 0.82 / Math.max((x1 - x0) / W, (y1 - y0) / MH)); target = [(x0 + x1) / 2, (y0 + y1) / 2, W / k]; }
+    this.zr = reg ? reg.name : null; this.names.selectAll("*").remove();
+    const zi = d3.interpolateZoom(this.view, target);
+    this.g.transition().duration(reduceMotion ? 0 : Math.min(1400, zi.duration * 0.9)).ease(ease).tween("zoom", () => t => this.apply(zi(t)))
+      .on("end", () => this.drawNames());
+    this.back.transition().duration(300).attr("opacity", reg ? 1 : 0); this.back.style("pointer-events", reg ? "all" : "none");
+    this.sg.transition().duration(350).attr("opacity", d => (this.match(d) ? 1 : 0.1));
+    this.drawArea(true);
+  },
+  drawNames() {
+    // names for the largest matching sites in a zoomed region, placed greedily without overlaps; plus the hovered site
+    const k = this.k, W = this.W, MH = this.MH, v = this.view, px = this.labelPx + 1;
+    const scr = d => [W / 2 + (d.xy[0] - v[0]) * k, MH / 2 + (d.xy[1] - v[1]) * k];
+    let pick = [];
+    if (this.zr) {
+      const boxes = this.sites.filter(d => this.match(d)).map(d => { const [x, y] = scr(d); return [x - 6, y - 6, x + 6, y + 6]; });
+      this.sites.filter(d => this.match(d) && d.power >= 150).forEach(d => {
+        const [x, y] = scr(d), rr = Math.max(2.5, this.r(d.power)) * Math.pow(k, 0.45), w = d.name.length * px * 0.55, bx = [x + rr + 4, y - px / 2 - 1, x + rr + 6 + w, y + px / 2 + 1];
+        if (bx[2] > W - 4 || boxes.some(o => !(bx[2] < o[0] || bx[0] > o[2] || bx[3] < o[1] || bx[1] > o[3]) && !(Math.abs((o[0] + o[2]) / 2 - x) < 1 && Math.abs((o[1] + o[3]) / 2 - y) < 1))) return;
+        boxes.push(bx); pick.push(d);
+      });
+    }
+    if (this.hover && !pick.includes(this.hover)) pick.push(this.hover);
+    this.names.selectAll("text").data(pick, d => d.name).join(e => e.append("text").attr("class", "map-label").attr("opacity", 0).call(x => x.transition().duration(250).attr("opacity", 1)))
+      .attr("x", d => d.xy[0] + (Math.max(2.5, this.r(d.power)) * Math.pow(k, 0.45) + 4) / k).attr("y", d => d.xy[1]).attr("dy", "0.35em")
+      .style("font-size", px / k + "px").style("stroke-width", 3 / k + "px").text(d => d.name);
+  },
+  outline(reg) { this.regLine.attr("d", reg ? this.path(reg.shape) : null); },
+  when() { return this.fmtMonth(this.m); },
   siteTip(d) { return `<b>${d.name}</b><br><span class="t-muted">${d.co === "Other" ? d.owner || "Other" : d.co} · ${d.grid || d.region}</span><br>${fmtGW(d.on)} of ${fmtGW(d.power)} online by ${this.when()}<br><span class="t-muted">Click to see its heat reach</span>`; },
-  regTip(g) { const on = d3.sum(g.sites, d => d.on), pl = d3.sum(g.sites, d => d.power); return `<b>${g.name}</b><br>${g.sites.length} data centers<br>${fmtGW(on)} of ${fmtGW(pl)} online by ${this.when()}`; },
-  focusRegion(name) {
-    if (name === this.fr) return; this.fr = name;
-    this.wash.transition().duration(250).attr("fill-opacity", g => (!name ? 0.1 : g.name === name ? 0.3 : 0.05));
-  },
-  set(t) {
-    const playing = !!this.timer; this.t = t; const i = this.idx(), r = this.r;
-    this.sites.forEach(d => { const was = d.on; d.on = Math.min(d.power, d.s[i] || 0); if (playing && was === 0 && d.on > 0 && (!this.co || d.co === this.co)) this.pulse(d); });
-    this.discs.attr("r", d => (d.on > 0 ? Math.max(2, r(d.on)) : 0));
-    this.prog.attr("x2", this.x(t)); this.head.attr("cx", this.x(t));
-    this.date.attr("x", this.x(t)).text(d3.timeFormat("%b %Y")(d3.timeParse("%Y-%m")(this.months[i])));
-  },
+  regTip(g) { const on = d3.sum(g.sites, d => d.on), pl = d3.sum(g.sites, d => d.power); return `<b>${g.name}</b><br>${g.sites.length} data centers, ${fmtGW(on)} of ${fmtGW(pl)} online by ${this.when()}<br><span class="t-muted">${this.zr === g.name ? "Click to zoom out" : "Click to zoom in"}</span>`; },
   pulse(d) {
-    const r0 = Math.max(3, this.r(d.power));
-    this.pulses.append("circle").attr("cx", d.xy[0]).attr("cy", d.xy[1]).attr("r", r0).attr("fill", "none").attr("stroke", ACCENT).attr("stroke-width", 1.5).attr("opacity", 0.9)
-      .transition().duration(1100).ease(d3.easeCubicOut).attr("r", r0 + 18).attr("opacity", 0).remove();
+    const k = this.k, r0 = Math.max(3, this.r(d.power)) * Math.pow(k, 0.45) / k;
+    this.pulses.append("circle").attr("cx", d.xy[0]).attr("cy", d.xy[1]).attr("r", r0).attr("fill", "none").attr("stroke", ACCENT).attr("stroke-width", 1.5).attr("vector-effect", "non-scaling-stroke").attr("opacity", 0.9)
+      .transition().duration(1100).ease(d3.easeCubicOut).attr("r", r0 + 16 / k).attr("opacity", 0).remove();
   },
   play() {
-    if (this.t >= 2030.99) this.set(2023);
-    const t0 = performance.now(), from = this.t, dur = 9000 * (2031 - from) / 8;
-    this.timer = d3.timer(() => { const u = Math.min(1, (performance.now() - t0) / dur); this.set(from + (2031 - from) * u); if (u >= 1) this.pause(); });
+    if (this.m >= 94.99) this.set(0);
+    const t0 = performance.now(), from = this.m, dur = 9000 * (95 - from) / 95;
+    this.timer = d3.timer(() => { const u = Math.min(1, (performance.now() - t0) / dur); this.set(from + (95 - from) * u); if (u >= 1) this.pause(); });
     this.setIcon(true);
   },
   pause() { if (this.timer) this.timer.stop(); this.timer = null; this.setIcon(false); },
@@ -416,7 +493,7 @@ const Stream = {
     this.stack = d3.stack().keys(this.R);
     this.x = d3.scaleLinear().domain([this.d0, this.d1 - 1]).range([0, this.iw]);
     this.y = d3.scaleLinear().range([this.ih, 0]);
-    const months = d3.range(4, 10).map(mo => ({ mo, d: d3.timeDay.count(new Date(2050, 0, 1), new Date(2050, mo, 1)) }));
+    const months = d3.range(4, 9).map(mo => ({ mo, d: d3.timeDay.count(new Date(2050, 0, 1), new Date(2050, mo, 1)) }));
     g.append("g").attr("class", "axis").attr("transform", `translate(0,${this.ih})`).call(d3.axisBottom(this.x).tickValues(months.map(o => o.d + 14)).tickFormat((v, i) => MONTHS[months[i].mo]).tickSize(0)).call(a => a.select(".domain").attr("stroke", "#bdc1c6")).selectAll("text").attr("dy", "1.2em");
     this.ya = g.append("g").attr("class", "axis");
     g.append("text").attr("class", "axis-title").attr("x", -m.l + 2).attr("y", -14).text("Expected number of grid regions in region-wide heat");

@@ -371,5 +371,12 @@ svg text.region-label { font-size: 12px; font-weight: 500; letter-spacing: .12em
 @media (max-width: 600px) {
   #fleetmap text.flow-tick { font-size: 24px; }
   #fleetmap text.flow-date { font-size: 26px; }
-  #fleetmap text.region-label { font-size: 20px; stroke-width: 5px; }
+  #fleetmap text.region-label { font-size: 20px; }
+  #fleetmap .fm-axis text { font-size: 22px; }
+}
+#fleetmap .fm-axis text { font-size: 13px; fill: #5f6368; font-family: inherit; }
+#fleetmap text.fm-back { font-size: 13px; fill: #202124; }
+#fleetmap text.map-label { paint-order: stroke; stroke: #fff; stroke-linejoin: round; fill: #202124; }
+@media (max-width: 600px) {
+  #fleetmap .fm-axis text { font-size: 24px; }
 }
