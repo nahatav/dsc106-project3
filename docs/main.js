@@ -34,7 +34,7 @@ const fmtPct = d3.format(".0%"), fmt1 = d3.format(".1f");
 const fmtGW = mw => (mw / 1000).toFixed(1) + " GW";
 const shortName = n => SHORT[n] || n;
 const cite = (...n) => n.map(i => `<a class="cite" href="#r${i}">${i}</a>`).join('<span class="cite-sep">,</span>');
-const gridY = g => g.call(a => a.select(".domain").remove()).call(a => a.selectAll(".tick line").attr("stroke", "#e8eaed"));
+const gridY = g => g.call(a => a.select(".domain").remove()).call(a => a.selectAll(".tick line").attr("stroke", "#ece8e3"));
 const ease = d3.easeCubicInOut;
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const DUR = reduceMotion ? 0 : 750;
@@ -68,7 +68,7 @@ Promise.all(["sites", "summary", "regions", "reach", "coexposure", "buildout", "
     D.usGW = d3.sum(D.us, d => d.power);
     d3.select("#model-list").text(D.models.join(", "));
     setupGeo();
-    Hero.init(); Fleet.init(); Reach.init(); Mosaic.init(); Stream.init(); Siting.init(); Globe.init();
+    Fleet.init(); Reach.init(); Mosaic.init(); Stream.init(); Siting.init(); Globe.init();
     d3.selectAll("#seg-climate button").on("click", function () { setClimate(this.dataset.k); });
     initQuickLinks();
     setClimate(state.climate);
@@ -160,40 +160,13 @@ function rampLegend(sel, label, colors, ticks, extras) {
   extras && extras(svg.append("g").attr("transform", "translate(360,6)"));
 }
 
-/* ---------------- Header: heat pulses sweep a quiet map ---------------- */
-const Hero = {
-  init() {
-    const svg = d3.select("#hero").attr("viewBox", "0 0 975 610");
-    const defs = svg.append("defs");
-    const gr = defs.append("radialGradient").attr("id", "pulse");
-    [[0, HOT, 0.55], [0.6, HOT, 0.25], [1, HOT, 0]].forEach(([o, c, a]) => gr.append("stop").attr("offset", o).attr("stop-color", c).attr("stop-opacity", a));
-    defs.append("clipPath").attr("id", "hero-clip").append("path").datum(G.nation).attr("d", d3.geoPath());
-    baseMap(svg, "#ecebe8");
-    const pulses = svg.append("g").attr("clip-path", "url(#hero-clip)");
-    const r = d3.scaleSqrt().domain([0, 2800]).range([2.2, 9]);
-    const dots = svg.append("g").selectAll("circle").data(D.us).join("circle").attr("cx", d => d.xy[0]).attr("cy", d => d.xy[1]).attr("r", d => r(d.power))
-      .attr("fill", BLUE).attr("stroke", "#fff").attr("stroke-width", 1);
-    if (reduceMotion) return;
-    const seeds = D.us.slice().sort((a, b) => b.power - a.power).slice(0, 10);
-    let i = 0;
-    const fire = () => {
-      const s = seeds[i++ % seeds.length], R = 230 + Math.random() * 80, T = 3400;
-      pulses.append("circle").attr("cx", s.xy[0]).attr("cy", s.xy[1]).attr("r", 0).attr("fill", "url(#pulse)").attr("opacity", 1)
-        .transition().duration(T).ease(d3.easeCubicOut).attr("r", R).transition().duration(900).attr("opacity", 0).remove();
-      dots.filter(d => Math.hypot(d.xy[0] - s.xy[0], d.xy[1] - s.xy[1]) < R * 0.75)
-        .transition().delay(d => d3.easeCubicOut.invert ? 0 : 0).delay(d => (Math.hypot(d.xy[0] - s.xy[0], d.xy[1] - s.xy[1]) / R) * T * 0.6).duration(300).attr("fill", HOT)
-        .transition().delay(1400).duration(900).attr("fill", BLUE);
-    };
-    fire(); d3.interval(fire, 2600);
-  },
-};
-
-/* ---------------- Figure 1: the fleet on the map, coming online ---------------- */
+/* ---------------- Figure 1: the fleet as dots of power, coming online ---------------- */
 const ownerOf = d => (/Stargate/.test(d.name) ? "OpenAI" : d.owner === "SpaceXAI" ? "xAI" : ["Meta", "Google", "Microsoft", "Amazon", "CoreWeave"].includes(d.owner) ? d.owner : "Other");
 const REGION_LABEL_AT = { West: [-40, 20], SPP: [0, -6], ERCOT: [10, 22], MISO: [-34, -40], PJM: [10, -58], Southeast: [10, 46], NYISO: [6, -16] };
+const FM = { unit: 100, r: 3.1, on: "#93183a", fresh: "#f2844f", off: "#ddd6ce", land: "#f3f0ec" };
 const Fleet = {
   init() {
-    const W = 975, MH = 610, H = 840, svg = (this.svg = d3.select("#fleetmap").attr("viewBox", `0 0 ${W} ${H}`)), path = (this.path = d3.geoPath());
+    const W = 975, MH = 610, H = 800, svg = (this.svg = d3.select("#fleetmap").attr("viewBox", `0 0 ${W} ${H}`)), path = (this.path = d3.geoPath());
     this.W = W; this.MH = MH; this.view = [W / 2, MH / 2, W]; this.k = 1; this.co = null; this.zr = null;
     const lower48 = D.topo.objects.states.geometries.filter(g => !["02", "15"].includes(g.id));
     const regionOf = new Map(Object.entries(D.reg.states).flatMap(([r, ss]) => ss.map(st => [st, r])));
@@ -201,150 +174,172 @@ const Fleet = {
     this.months = D.build.months; this.m0 = this.months.indexOf("2023-01");
     this.sites = D.us.map(d => ({ ...d, co: ownerOf(d), s: ser.get(d.name) || [], on: 0 })).sort((p, q) => q.power - p.power);
     this.regs = Object.keys(D.reg.states).map(r => ({ name: r, shape: topojson.merge(D.topo, lower48.filter(g => regionOf.get(g.properties.name) === r)), sites: this.sites.filter(d => d.region === r) }));
-    const r = (this.r = d3.scaleSqrt().domain([0, 2800]).range([0, 19]));
 
-    // ---- map ----
+    // one dot per 100 MW, packed around each site; dots fill from the centre out
+    const dots = (this.dots = []);
+    this.sites.forEach(d => {
+      d.n = Math.max(1, Math.round(d.power / FM.unit));
+      for (let j = 0; j < d.n; j++) { const a = j * 2.39996, rr = Math.sqrt(j + 0.5) * FM.r * 2; dots.push({ site: d, x: d.xy[0] + rr * Math.cos(a), y: d.xy[1] + rr * Math.sin(a), on: false }); }
+    });
+    const sim = d3.forceSimulation(dots).force("x", d3.forceX(o => o.site.xy[0]).strength(0.07)).force("y", d3.forceY(o => o.site.xy[1]).strength(0.07)).force("c", d3.forceCollide(FM.r + 0.7).iterations(3)).stop();
+    for (let i = 0; i < 260; i++) sim.tick();
+    d3.groups(dots, o => o.site).forEach(([site, ds]) => ds.sort((p, q) => Math.hypot(p.x - site.xy[0], p.y - site.xy[1]) - Math.hypot(q.x - site.xy[0], q.y - site.xy[1])).forEach((o, i) => { o.rank = i; }));
+
+    // map
     svg.append("clipPath").attr("id", "fm-clip").append("rect").attr("width", W).attr("height", MH);
     const outer = svg.append("g").attr("clip-path", "url(#fm-clip)");
-    outer.append("rect").attr("width", W).attr("height", MH).attr("fill", "#fff").on("click", () => this.zoomTo(null));
+    outer.append("rect").attr("width", W).attr("height", MH).attr("fill", "#fff");
     const g = (this.g = outer.append("g"));
-    g.append("path").datum(G.nation).attr("d", path).attr("fill", WARMGREY);
-    g.append("g").selectAll("path").data(this.regs).join("path").attr("d", d => path(d.shape)).attr("fill", "transparent").style("cursor", "zoom-in")
-      .on("mousemove", (e, d) => { this.outline(d); showTip(e, this.regTip(d)); }).on("mouseleave", () => { this.outline(null); hideTip(); })
-      .on("click", (e, d) => { hideTip(); this.zoomTo(this.zr === d.name ? null : d); });
+    g.append("path").datum(G.nation).attr("d", path).attr("fill", FM.land);
+    this.regHit = g.append("g").selectAll("path").data(this.regs).join("path").attr("d", d => path(d.shape)).attr("fill", "transparent");
     const thin = sel => sel.attr("fill", "none").attr("vector-effect", "non-scaling-stroke").style("pointer-events", "none");
-    g.append("path").datum(G.states).attr("d", path).call(thin).attr("stroke", "#fff").attr("stroke-width", 0.8);
+    g.append("path").datum(G.states).attr("d", path).call(thin).attr("stroke", "#fff").attr("stroke-width", 0.9);
     g.append("path").datum(topojson.mesh(D.topo, { type: "GeometryCollection", geometries: lower48 }, (x, y) => x !== y && regionOf.get(x.properties.name) !== regionOf.get(y.properties.name)))
-      .attr("d", path).call(thin).attr("stroke", "#a9a198").attr("stroke-width", 1.3);
-    this.regLine = g.append("path").call(thin).attr("stroke", INK).attr("stroke-width", 1.8);
-    this.regLabels = g.append("g").style("pointer-events", "none").selectAll("text").data(this.regs).join("text").attr("class", "region-label").attr("text-anchor", "middle").text(d => d.name);
-    this.regLabels.each(function (d) { const [cx, cy] = path.centroid(d.shape), o = REGION_LABEL_AT[d.name] || [0, 0]; d.lx = cx + o[0]; d.ly = cy + o[1]; });
+      .attr("d", path).call(thin).attr("stroke", "#c4bbb1").attr("stroke-width", 1.2);
+    this.regLine = g.append("path").call(thin).attr("stroke", INK).attr("stroke-width", 1.6);
+    this.regLabels = g.append("g").style("pointer-events", "none").selectAll("text").data(this.regs).join("text").attr("class", "region-label").attr("text-anchor", "middle").text(d => d.name)
+      .each(d => { const [cx, cy] = path.centroid(d.shape), o = REGION_LABEL_AT[d.name] || [0, 0]; d.lx = cx + o[0]; d.ly = cy + o[1]; });
     this.labelPx = parseFloat(getComputedStyle(this.regLabels.node()).fontSize);
-    this.sg = g.append("g").selectAll("g").data(this.sites).join("g").style("cursor", "pointer")
-      .on("mouseenter", (e, d) => { this.outline(this.regs.find(x => x.name === d.region)); this.hover = d; this.drawNames(); })
-      .on("mousemove", (e, d) => showTip(e, this.siteTip(d)))
-      .on("mouseleave", () => { this.outline(null); this.hover = null; this.drawNames(); hideTip(); })
-      .on("click", (e, d) => { e.stopPropagation(); hideTip(); Reach.picked = true; Reach.stopTour(); Reach.pin = d.name; Reach.show(d.name, true); document.getElementById("reach").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" }); });
-    this.hit = this.sg.append("circle").attr("fill", "transparent");
-    this.ring = this.sg.append("circle").attr("fill", "#fff").attr("stroke", "#8d877f").attr("vector-effect", "non-scaling-stroke").attr("stroke-width", 0.8);
-    this.disc = this.sg.append("circle").attr("fill", INK).attr("stroke", "#fff").attr("vector-effect", "non-scaling-stroke").attr("stroke-width", 0.7).attr("r", 0);
-    this.pulses = g.append("g").style("pointer-events", "none");
+    this.dotSel = g.append("g").style("pointer-events", "none").selectAll("circle").data(dots).join("circle").attr("cx", o => o.x).attr("cy", o => o.y).attr("fill", FM.off);
+    this.halo = g.append("g").style("pointer-events", "none");
     this.names = g.append("g").style("pointer-events", "none");
+
+    // pointer: nearest dot picks a site, otherwise the region under the cursor
+    const del = d3.Delaunay.from(dots, o => o.x, o => o.y);
+    const pick = e => { const [mx, my] = d3.pointer(e, g.node()), o = dots[del.find(mx, my)]; return Math.hypot(o.x - mx, o.y - my) * this.k < 10 ? o.site : null; };
+    outer.on("mousemove", e => {
+      const d = pick(e), reg = d ? this.regs.find(x => x.name === d.region) : (d3.select(e.target).datum() || {}).shape ? d3.select(e.target).datum() : null;
+      this.setHover(d); this.outline(reg); outer.style("cursor", d ? "pointer" : reg ? (this.zr === reg.name ? "zoom-out" : "zoom-in") : null);
+      if (d) showTip(e, this.siteTip(d)); else if (reg) showTip(e, this.regTip(reg)); else hideTip();
+    }).on("mouseleave", () => { this.setHover(null); this.outline(null); hideTip(); })
+      .on("click", e => {
+        const d = pick(e); hideTip();
+        if (d) { Reach.picked = true; Reach.stopTour(); Reach.pin = d.name; Reach.show(d.name, true); document.getElementById("reach").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" }); return; }
+        const reg = d3.select(e.target).datum(); this.zoomTo(reg && reg.shape && this.zr !== reg.name ? reg : null);
+      });
+
+    // key, in the empty Pacific corner
+    const key = (this.key = svg.append("g").attr("class", "fm-key").attr("transform", `translate(18,${MH - 76})`).style("pointer-events", "none"));
+    [[FM.on, "100 MW online"], [FM.off, "100 MW planned"]].forEach(([c, t], i) => { const row = key.append("g").attr("transform", `translate(0,${i * 26})`); row.append("circle").attr("cx", 5).attr("r", FM.r + 0.6).attr("fill", c); row.append("text").attr("x", 16).attr("dy", "0.35em").text(t); });
+    const kr = key.append("g").attr("transform", "translate(0,52)"); kr.append("line").attr("x2", 11).attr("stroke", "#c4bbb1").attr("stroke-width", 1.5); kr.append("text").attr("x", 16).attr("dy", "0.35em").text("Grid region boundary");
+
     this.back = svg.append("g").attr("transform", `translate(16,16) scale(${window.innerWidth < 600 ? 1.9 : 1})`).style("cursor", "pointer").attr("opacity", 0).style("pointer-events", "none").on("click", () => this.zoomTo(null));
-    this.back.append("rect").attr("width", 118).attr("height", 32).attr("rx", 16).attr("fill", "#fff").attr("stroke", "#dadce0");
-    this.back.append("text").attr("class", "fm-back").attr("x", 59).attr("y", 21).attr("text-anchor", "middle").text("Whole country");
+    this.back.append("rect").attr("width", 130).attr("height", 32).attr("rx", 16).attr("fill", "#fff").attr("stroke", "#e0dad3");
+    this.back.append("text").attr("class", "fm-back").attr("x", 65).attr("y", 21).attr("text-anchor", "middle").text("Whole country");
 
-    // ---- company filter ----
-    const cos = d3.rollups(this.sites, x => d3.sum(x, d => d.power), d => d.co).filter(c => c[0] !== "Other").sort((p, q) => q[1] - p[1]).map(c => c[0]);
-    d3.select("#fleet-co").selectAll("button").data([null, ...cos]).join("button").text(c => c || "All").classed("on", c => !c)
-      .on("click", (e, c) => { this.co = c; d3.selectAll("#fleet-co button").classed("on", x => x === c); this.sg.transition().duration(350).attr("opacity", d => (this.match(d) ? 1 : 0.1)); this.drawArea(true); this.drawNames(); });
+    // company menu
+    const cos = d3.rollups(this.sites, x => d3.sum(x, d => d.power), d => d.co).sort((p, q) => (p[0] === "Other") - (q[0] === "Other") || q[1] - p[1]);
+    const sel = d3.select("#fleet-co");
+    sel.selectAll("option").data([["", d3.sum(this.sites, d => d.power)], ...cos]).join("option").attr("value", c => c[0]).text(c => `${c[0] || "All companies"} (${fmtGW(c[1])})`);
+    sel.on("change", e => { this.co = e.target.value || null; this.refilter(); });
 
-    // ---- capacity over time, which doubles as the timeline ----
-    const rp = window.innerWidth < 600 ? 100 : 64, ax = (this.ax = d3.scaleLinear().domain([0, 95]).range([120, W - rp])), top = MH + 56, bot = H - 40;
+    // power online over time, which doubles as the timeline
+    const rp = window.innerWidth < 600 ? 100 : 64, ax = (this.ax = d3.scaleLinear().domain([0, 95]).range([120, W - rp])), top = MH + 62, bot = H - 40;
     this.ay = d3.scaleLinear().range([bot, top]);
     const tl = svg.append("g");
     this.yAxis = tl.append("g").attr("class", "fm-axis").attr("transform", `translate(${W - rp},0)`);
     tl.append("g").attr("class", "fm-axis").attr("transform", `translate(0,${bot})`)
       .call(d3.axisBottom(ax).tickValues(d3.range(8).map(y => y * 12 + 6)).tickFormat((v, i) => 2023 + i).tickSize(0)).call(x => x.select(".domain").attr("stroke", "#c9c3bb")).selectAll("text").attr("dy", "1.3em");
     tl.selectAll(".yr").data(d3.range(1, 8)).join("line").attr("x1", y => ax(y * 12 - 0.5)).attr("x2", y => ax(y * 12 - 0.5)).attr("y1", bot).attr("y2", bot + 5).attr("stroke", "#c9c3bb");
-    svg.append("clipPath").attr("id", "fm-reveal").append("rect").attr("y", top - 30).attr("height", bot - top + 30).attr("x", ax.range()[0]);
+    svg.append("clipPath").attr("id", "fm-reveal").append("rect").attr("y", top - 40).attr("height", bot - top + 40).attr("x", ax.range()[0]);
     this.reveal = svg.select("#fm-reveal rect");
-    this.areaAll = tl.append("path").attr("fill", "#e7e3de");
-    this.areaOn = tl.append("path").attr("fill", INK).attr("fill-opacity", 0.86).attr("clip-path", "url(#fm-reveal)");
-    this.play_line = tl.append("line").attr("y1", top - 6).attr("y2", bot).attr("stroke", ACCENT).attr("stroke-width", 1.5);
-    this.play_dot = tl.append("circle").attr("r", 4.5).attr("fill", ACCENT).attr("stroke", "#fff").attr("stroke-width", 1.5);
-    this.date = tl.append("text").attr("class", "flow-date").attr("y", top - 14).attr("text-anchor", "middle");
+    this.areaAll = tl.append("path").attr("fill", "#ede9e4");
+    this.areaOn = tl.append("path").attr("fill", FM.on).attr("clip-path", "url(#fm-reveal)");
+    this.play_line = tl.append("line").attr("y1", top - 8).attr("y2", bot).attr("stroke", INK).attr("stroke-width", 1.2);
+    this.play_dot = tl.append("circle").attr("r", 5).attr("fill", INK).attr("stroke", "#fff").attr("stroke-width", 2);
+    this.date = tl.append("text").attr("class", "fm-date").attr("y", top - 18).attr("text-anchor", "middle");
     const btn = tl.append("g").attr("transform", `translate(64,${(top + bot) / 2})`).style("cursor", "pointer").on("click", () => (this.timer ? this.pause() : this.play()));
-    btn.append("circle").attr("r", 17).attr("fill", INK);
+    btn.append("circle").attr("r", 18).attr("fill", INK);
     this.icon = btn.append("path").attr("fill", "#fff");
-    tl.append("rect").attr("x", ax.range()[0] - 8).attr("width", ax.range()[1] - ax.range()[0] + 16).attr("y", top - 30).attr("height", bot - top + 44).attr("fill", "transparent").style("cursor", "ew-resize")
-      .on("mousemove", e => { const m = Math.round(ax.invert(d3.pointer(e)[0])), v = this.series()[Math.max(0, Math.min(95, m))]; showTip(e, `<b>${this.fmtMonth(m)}</b><br>${fmtGW(v)} online${this.scope()}`); })
-      .on("mouseleave", hideTip)
+    tl.append("rect").attr("x", ax.range()[0] - 8).attr("width", ax.range()[1] - ax.range()[0] + 16).attr("y", top - 40).attr("height", bot - top + 56).attr("fill", "transparent").style("cursor", "ew-resize")
       .call(d3.drag().on("start drag", e => { this.pause(); this.set(Math.max(0, Math.min(95, ax.invert(e.x)))); }));
 
     this.apply(this.view); this.drawArea(false); this.set(0); this.setIcon(false);
     onVisible("#fleetmap", () => (reduceMotion ? this.set(95) : this.play()), 0.4);
   },
   match(d) { return (!this.co || d.co === this.co) && (!this.zr || d.region === this.zr); },
-  scope() { return (this.co ? ` for ${this.co}` : "") + (this.zr ? ` in ${this.zr}` : ""); },
+  scope() { return (this.co ? ` ${this.co}` : "") + (this.zr ? ` in ${this.zr}` : ""); },
   series() { const ss = this.sites.filter(d => this.match(d)); return d3.range(96).map(m => d3.sum(ss, d => Math.min(d.power, d.s[this.m0 + m] || 0))); },
-  fmtMonth(m) { return d3.timeFormat("%b %Y")(d3.timeParse("%Y-%m")(this.months[this.m0 + Math.round(m)])); },
+  fmtMonth(m) { return d3.timeFormat("%b %Y")(d3.timeParse("%Y-%m")(this.months[this.m0 + Math.floor(m)])); },
+  refilter() {
+    this.dotSel.transition().duration(350).attr("opacity", o => (!this.co || o.site.co === this.co ? 1 : 0.14));
+    this.drawArea(true); this.drawNames();
+  },
   drawArea(animate) {
     const v = this.series(), max = Math.max(500, d3.max(v));
-    this.ay.domain([0, max]).nice(3);
+    this.ay.domain([0, max * 1.12]);
     const area = d3.area().x((d, i) => this.ax(i)).y0(this.ay(0)).y1(d => this.ay(d)).curve(d3.curveMonotoneX)(v);
     const t = sel => (animate ? sel.transition().duration(600).ease(ease) : sel);
     t(this.areaAll).attr("d", area); t(this.areaOn).attr("d", area);
-    t(this.yAxis).call(d3.axisRight(this.ay).ticks(3).tickFormat(x => (x === 0 ? "" : x / 1000 + " GW")).tickSize(-(this.ax.range()[1] - this.ax.range()[0])))
-      .on("end", () => {});
-    this.yAxis.call(x => x.select(".domain").remove()).call(x => x.selectAll(".tick line").attr("stroke", "#eceae6")).call(x => x.selectAll("text").attr("dx", 6));
+    const step = (max > 20000 ? 10000 : max > 8000 ? 4000 : max > 3000 ? 1000 : 500) * (window.innerWidth < 600 ? 2 : 1);
+    this.yAxis.call(d3.axisRight(this.ay).tickValues(d3.range(step, max * 1.12, step)).tickFormat(x => x / 1000 + " GW").tickSize(-(this.ax.range()[1] - this.ax.range()[0])))
+      .call(x => x.select(".domain").remove()).call(x => x.selectAll(".tick line").attr("stroke", "#eceae6")).call(x => x.selectAll("text").attr("dx", 6));
     this.vals = v; if (this.m != null) this.set(this.m);
   },
   set(m) {
     const playing = !!this.timer; this.m = m; const i = this.m0 + Math.floor(m), x = this.ax(m);
-    this.sites.forEach(d => { const was = d.on; d.on = Math.min(d.power, d.s[i] || 0); if (playing && was === 0 && d.on > 0 && this.match(d)) this.pulse(d); });
-    this.sizes();
+    this.sites.forEach(d => { d.on = Math.min(d.power, d.s[i] || 0); d.nOn = d.on > 0 ? Math.max(1, Math.round(d.n * d.on / d.power)) : 0; });
+    const changed = this.dotSel.filter(o => (o.rank < o.site.nOn) !== o.on).each(o => { o.on = !o.on; });
+    changed.filter(o => !o.on).interrupt().attr("fill", FM.off);
+    const lit = changed.filter(o => o.on);
+    if (playing) lit.interrupt().attr("fill", FM.fresh).transition().duration(1200).ease(d3.easeCubicOut).attr("fill", FM.on);
+    else lit.interrupt().attr("fill", FM.on);
     this.reveal.attr("width", x - this.ax.range()[0]);
     const v = this.vals[Math.floor(m)] || 0;
     this.play_line.attr("x1", x).attr("x2", x); this.play_dot.attr("cx", x).attr("cy", this.ay(v));
-    this.date.attr("x", Math.min(x, this.ax.range()[1] - 26)).text(this.fmtMonth(m));
-  },
-  sizes() {
-    const k = this.k, sc = Math.pow(k, 0.45) / k, r = this.r;
-    this.ring.attr("r", d => Math.max(2.5, r(d.power)) * sc);
-    this.hit.attr("r", d => Math.max(9 / k, Math.max(2.5, r(d.power)) * sc + 3 / k));
-    this.disc.attr("r", d => (d.on > 0 ? Math.max(2, r(d.on)) * sc : 0));
+    const lab = `${this.fmtMonth(m)} · ${fmtGW(v)} online`, lx = Math.max(this.ax.range()[0] + 70, Math.min(x, this.ax.range()[1] - 70));
+    this.date.attr("x", lx).text(lab);
   },
   apply(v) {
     const W = this.W, MH = this.MH, k = (this.k = W / v[2]);
     this.view = v;
     this.g.attr("transform", `translate(${W / 2 - v[0] * k},${MH / 2 - v[1] * k}) scale(${k})`);
-    this.sg.attr("transform", d => `translate(${d.xy[0]},${d.xy[1]})`);
-    this.regLabels.attr("x", d => d.lx).attr("y", d => d.ly).style("font-size", this.labelPx / k + "px").style("stroke-width", 3 / k + "px").attr("opacity", d => (!this.zr || d.name === this.zr ? 1 : 0.5));
-    this.sizes();
+    this.dotSel.attr("r", FM.r * Math.pow(k, -0.12));
+    this.regLabels.attr("x", d => d.lx).attr("y", d => d.ly).style("font-size", this.labelPx / k + "px").style("stroke-width", 3 / k + "px").attr("opacity", d => (!this.zr || d.name === this.zr ? 1 : 0.45));
   },
   zoomTo(reg) {
     const W = this.W, MH = this.MH;
     let target = [W / 2, MH / 2, W];
-    if (reg) { const [[x0, y0], [x1, y1]] = this.path.bounds(reg.shape), k = Math.min(4, 0.82 / Math.max((x1 - x0) / W, (y1 - y0) / MH)); target = [(x0 + x1) / 2, (y0 + y1) / 2, W / k]; }
-    this.zr = reg ? reg.name : null; this.names.selectAll("*").remove();
+    if (reg) { const [[x0, y0], [x1, y1]] = this.path.bounds(reg.shape), k = Math.min(4, 0.8 / Math.max((x1 - x0) / W, (y1 - y0) / MH)); target = [(x0 + x1) / 2, (y0 + y1) / 2, W / k]; }
+    this.zr = reg ? reg.name : null; this.names.selectAll("*").remove(); this.halo.selectAll("*").remove();
     const zi = d3.interpolateZoom(this.view, target);
-    this.g.transition().duration(reduceMotion ? 0 : Math.min(1400, zi.duration * 0.9)).ease(ease).tween("zoom", () => t => this.apply(zi(t)))
-      .on("end", () => this.drawNames());
+    this.g.transition().duration(reduceMotion ? 0 : Math.min(1400, zi.duration * 0.9)).ease(ease).tween("zoom", () => t => this.apply(zi(t))).on("end", () => this.drawNames());
+    this.key.transition().duration(300).attr("opacity", reg ? 0 : 1);
     this.back.transition().duration(300).attr("opacity", reg ? 1 : 0); this.back.style("pointer-events", reg ? "all" : "none");
-    this.sg.transition().duration(350).attr("opacity", d => (this.match(d) ? 1 : 0.1));
     this.drawArea(true);
   },
+  setHover(d) {
+    if (d === this.hover) return; this.hover = d;
+    const k = this.k, rr = FM.r * Math.pow(k, -0.12) + 1.4 / k;
+    this.halo.selectAll("circle").data(d ? this.dots.filter(o => o.site === d) : []).join("circle").attr("cx", o => o.x).attr("cy", o => o.y).attr("r", rr)
+      .attr("fill", "none").attr("stroke", INK).attr("stroke-width", 1.2).attr("vector-effect", "non-scaling-stroke");
+    this.drawNames();
+  },
   drawNames() {
-    // names for the largest matching sites in a zoomed region, placed greedily without overlaps; plus the hovered site
+    // in a zoomed region, name the larger sites without overlaps; always name the hovered site
     const k = this.k, W = this.W, MH = this.MH, v = this.view, px = this.labelPx + 1;
-    const scr = d => [W / 2 + (d.xy[0] - v[0]) * k, MH / 2 + (d.xy[1] - v[1]) * k];
+    const scr = (x, y) => [W / 2 + (x - v[0]) * k, MH / 2 + (y - v[1]) * k];
+    const ext = d => { const ds = this.dots.filter(o => o.site === d); return [d3.min(ds, o => o.x), d3.max(ds, o => o.x), d3.mean(ds, o => o.y)]; };
     let pick = [];
     if (this.zr) {
-      const boxes = this.sites.filter(d => this.match(d)).map(d => { const [x, y] = scr(d); return [x - 6, y - 6, x + 6, y + 6]; });
+      const boxes = this.dots.filter(o => this.match(o.site)).map(o => { const [x, y] = scr(o.x, o.y); return [x - 4, y - 4, x + 4, y + 4]; });
       this.sites.filter(d => this.match(d) && d.power >= 150).forEach(d => {
-        const [x, y] = scr(d), rr = Math.max(2.5, this.r(d.power)) * Math.pow(k, 0.45), w = d.name.length * px * 0.55, bx = [x + rr + 4, y - px / 2 - 1, x + rr + 6 + w, y + px / 2 + 1];
-        if (bx[2] > W - 4 || boxes.some(o => !(bx[2] < o[0] || bx[0] > o[2] || bx[3] < o[1] || bx[1] > o[3]) && !(Math.abs((o[0] + o[2]) / 2 - x) < 1 && Math.abs((o[1] + o[3]) / 2 - y) < 1))) return;
+        const [, x1, ym] = ext(d), [x, y] = scr(x1, ym), w = d.name.length * px * 0.55, bx = [x + 6, y - px / 2 - 1, x + 8 + w, y + px / 2 + 1];
+        if (bx[2] > W - 4 || boxes.some(o => !(bx[2] < o[0] || bx[0] > o[2] || bx[3] < o[1] || bx[1] > o[3]))) return;
         boxes.push(bx); pick.push(d);
       });
     }
     if (this.hover && !pick.includes(this.hover)) pick.push(this.hover);
     this.names.selectAll("text").data(pick, d => d.name).join(e => e.append("text").attr("class", "map-label").attr("opacity", 0).call(x => x.transition().duration(250).attr("opacity", 1)))
-      .attr("x", d => d.xy[0] + (Math.max(2.5, this.r(d.power)) * Math.pow(k, 0.45) + 4) / k).attr("y", d => d.xy[1]).attr("dy", "0.35em")
+      .each(function (d) { d._e = ext(d); }).attr("x", d => d._e[1] + 6 / k).attr("y", d => d._e[2]).attr("dy", "0.35em")
       .style("font-size", px / k + "px").style("stroke-width", 3 / k + "px").text(d => d.name);
   },
   outline(reg) { this.regLine.attr("d", reg ? this.path(reg.shape) : null); },
-  when() { return this.fmtMonth(this.m); },
-  siteTip(d) { return `<b>${d.name}</b><br><span class="t-muted">${d.co === "Other" ? d.owner || "Other" : d.co} · ${d.grid || d.region}</span><br>${fmtGW(d.on)} of ${fmtGW(d.power)} online by ${this.when()}<br><span class="t-muted">Click to see its heat reach</span>`; },
-  regTip(g) { const on = d3.sum(g.sites, d => d.on), pl = d3.sum(g.sites, d => d.power); return `<b>${g.name}</b><br>${g.sites.length} data centers, ${fmtGW(on)} of ${fmtGW(pl)} online by ${this.when()}<br><span class="t-muted">${this.zr === g.name ? "Click to zoom out" : "Click to zoom in"}</span>`; },
-  pulse(d) {
-    const k = this.k, r0 = Math.max(3, this.r(d.power)) * Math.pow(k, 0.45) / k;
-    this.pulses.append("circle").attr("cx", d.xy[0]).attr("cy", d.xy[1]).attr("r", r0).attr("fill", "none").attr("stroke", ACCENT).attr("stroke-width", 1.5).attr("vector-effect", "non-scaling-stroke").attr("opacity", 0.9)
-      .transition().duration(1100).ease(d3.easeCubicOut).attr("r", r0 + 16 / k).attr("opacity", 0).remove();
-  },
+  siteTip(d) { return `<b>${d.name}</b><br><span class="t-muted">${d.co === "Other" ? d.owner || "Other" : d.co} · ${d.grid || d.region}</span><br>${fmtGW(d.on)} of ${fmtGW(d.power)} online by ${this.fmtMonth(this.m)}<br><span class="t-muted">Click to see its heat reach</span>`; },
+  regTip(g) { const on = d3.sum(g.sites, d => d.on), pl = d3.sum(g.sites, d => d.power); return `<b>${g.name}</b><br>${g.sites.length} data centers, ${fmtGW(on)} of ${fmtGW(pl)} online by ${this.fmtMonth(this.m)}<br><span class="t-muted">${this.zr === g.name ? "Click to zoom out" : "Click to zoom in"}</span>`; },
   play() {
     if (this.m >= 94.99) this.set(0);
-    const t0 = performance.now(), from = this.m, dur = 9000 * (95 - from) / 95;
+    const t0 = performance.now(), from = this.m, dur = 10000 * (95 - from) / 95;
     this.timer = d3.timer(() => { const u = Math.min(1, (performance.now() - t0) / dur); this.set(from + (95 - from) * u); if (u >= 1) this.pause(); });
     this.setIcon(true);
   },
@@ -362,7 +357,7 @@ const Reach = {
     const r = d3.scaleSqrt().domain([0, 2800]).range([2.5, 16]);
     this.sites = D.us.slice().sort((a, b) => b.power - a.power);
     this.circles = svg.append("g").selectAll("circle").data(this.sites, d => d.name).join("circle")
-      .attr("cx", d => d.xy[0]).attr("cy", d => d.xy[1]).attr("r", d => r(d.power)).attr("fill", "#fff").attr("stroke", "#5f6368").attr("stroke-width", 0.8);
+      .attr("cx", d => d.xy[0]).attr("cy", d => d.xy[1]).attr("r", d => r(d.power)).attr("fill", "#fff").attr("stroke", "#6b645c").attr("stroke-width", 0.8);
     this.ring = svg.append("circle").attr("fill", "none").attr("stroke", INK).attr("stroke-width", 2).style("pointer-events", "none");
     this.label = svg.append("text").attr("class", "map-label").style("pointer-events", "none");
     this.rs = r;
@@ -394,7 +389,7 @@ const Reach = {
     const k = state.climate, i = this.idx.get(this.sel), pr = D.reach.by[k].pair[i], s = this.sites.find(d => d.name === this.sel);
     this.map.to(decodeU8(D.reach.by[k].fields[i]));
     this.circles.transition().duration(DUR / 2).attr("fill", d => (d.name === this.sel ? INK : PROB_C(pr[this.idx.get(d.name)] + 0.01)))
-      .attr("stroke", d => (d.name === this.sel ? "#fff" : "#5f6368")).attr("stroke-width", d => (d.name === this.sel ? 2 : 0.8));
+      .attr("stroke", d => (d.name === this.sel ? "#fff" : "#6b645c")).attr("stroke-width", d => (d.name === this.sel ? 2 : 0.8));
     const rr = this.rs(s.power);
     this.ring.transition().duration(DUR).attr("cx", s.xy[0]).attr("cy", s.xy[1]).attr("r", rr + 5);
     this.label.text(shortName(s.name)).transition().duration(DUR).attr("x", s.xy[0]).attr("y", s.xy[1] - rr - 12).attr("text-anchor", "middle");
@@ -451,15 +446,15 @@ const Mosaic = {
       ctx.globalAlpha = 1;
       if (this.order === "model" && !this.moving) { ctx.fillStyle = "rgba(255,255,255,.85)"; for (let k = 1; k < 10; k++) ctx.fillRect(pn.x, this.top + k * 20 * this.rowH - 0.5, this.pw, 1); }
       // month ticks
-      ctx.fillStyle = "#80868b"; ctx.font = "12px 'Google Sans Flex', Arial, sans-serif"; ctx.textAlign = "center";
+      ctx.fillStyle = "#8a8279"; ctx.font = "12px 'Google Sans Flex', Arial, sans-serif"; ctx.textAlign = "center";
       [["May", 0], ["June", 31], ["July", 61], ["Aug", 92], ["Sept", 123]].forEach(([mname, d0]) => {
         ctx.fillText(mname, pn.x + (d0 + 15) * cw, this.top + this.n * this.rowH + 18);
-        ctx.fillStyle = "rgba(255,255,255,.7)"; ctx.fillRect(pn.x + d0 * cw, this.top, 1, this.n * this.rowH); ctx.fillStyle = "#80868b";
+        ctx.fillStyle = "rgba(255,255,255,.7)"; ctx.fillRect(pn.x + d0 * cw, this.top, 1, this.n * this.rowH); ctx.fillStyle = "#8a8279";
       });
     });
     // model labels when grouped
     if (this.order === "model" && !this.moving) {
-      ctx.textAlign = "right"; ctx.fillStyle = "#5f6368"; ctx.font = "11px 'Google Sans Flex', Arial, sans-serif";
+      ctx.textAlign = "right"; ctx.fillStyle = "#6b645c"; ctx.font = "11px 'Google Sans Flex', Arial, sans-serif";
       D.mosaic.by[HIST].filter((r, i) => i % 20 === 0).forEach((r, k) => { const y = this.top + (k * 20 + 10) * this.rowH + 4; ctx.fillText(r.m, this.left - 8, y); });
     }
   },
@@ -487,16 +482,18 @@ const Stream = {
     const smooth = arr => arr.map((v, i) => d3.mean(arr.slice(Math.max(0, i - 4), i + 5)));
     this.data = {};
     CLIMATES.forEach(c => {
-      const per = Object.fromEntries(D.streams.regions.map((r, j) => [r, smooth(D.streams.by[c.key][j])]));
+      const gw = Object.fromEntries(D.reg.regions.map((r, j) => [r, D.reg.power_gw[j]]));
+      const per = Object.fromEntries(D.streams.regions.map((r, j) => [r, smooth(D.streams.by[c.key][j]).map(v => v * gw[r])]));
+      this.prob = this.prob || {}; this.prob[c.key] = Object.fromEntries(D.streams.regions.map((r, j) => [r, smooth(D.streams.by[c.key][j])]));
       this.data[c.key] = this.days.map(d => Object.fromEntries([["d", d], ...this.R.map(r => [r, per[r][d]])]));
     });
     this.stack = d3.stack().keys(this.R);
     this.x = d3.scaleLinear().domain([this.d0, this.d1 - 1]).range([0, this.iw]);
     this.y = d3.scaleLinear().range([this.ih, 0]);
     const months = d3.range(4, 9).map(mo => ({ mo, d: d3.timeDay.count(new Date(2050, 0, 1), new Date(2050, mo, 1)) }));
-    g.append("g").attr("class", "axis").attr("transform", `translate(0,${this.ih})`).call(d3.axisBottom(this.x).tickValues(months.map(o => o.d + 14)).tickFormat((v, i) => MONTHS[months[i].mo]).tickSize(0)).call(a => a.select(".domain").attr("stroke", "#bdc1c6")).selectAll("text").attr("dy", "1.2em");
+    g.append("g").attr("class", "axis").attr("transform", `translate(0,${this.ih})`).call(d3.axisBottom(this.x).tickValues(months.map(o => o.d + 14)).tickFormat((v, i) => MONTHS[months[i].mo]).tickSize(0)).call(a => a.select(".domain").attr("stroke", "#c9c2ba")).selectAll("text").attr("dy", "1.2em");
     this.ya = g.append("g").attr("class", "axis");
-    g.append("text").attr("class", "axis-title").attr("x", -m.l + 2).attr("y", -14).text("Expected number of grid regions in region-wide heat");
+    g.append("text").attr("class", "axis-title").attr("x", -m.l + 2).attr("y", -14).text("Planned AI power in grid regions under region-wide heat, expected GW");
     this.area = d3.area().x(p => this.x(p.data.d)).y0(p => this.y(p[0])).y1(p => this.y(p[1])).curve(d3.curveBasis);
     this.paths = g.append("g").selectAll("path").data(this.stack(this.data[HIST]), s => s.key).join("path").attr("fill", s => REGION_COLOR[s.key]).attr("stroke", "#fff").attr("stroke-width", 0.5);
     this.histTotal = this.days.map((d, i) => d3.sum(this.R, r => this.data[HIST][i][r]));
@@ -507,7 +504,8 @@ const Stream = {
         const i = Math.max(0, Math.min(this.days.length - 1, Math.round(this.x.invert(d3.pointer(e)[0])) - this.d0)), row = this.data[state.climate][i];
         this.cursor.attr("x1", this.x(row.d)).attr("x2", this.x(row.d)).style("display", null);
         const dt = d3.timeDay.offset(new Date(2050, 0, 1), row.d);
-        showTip(e, `<b>${d3.timeFormat("%B %-d")(dt)}</b> · ${CL[state.climate].label}<br>Chance of region-wide heat:<br>` + this.R.slice().sort((a, b) => row[b] - row[a]).map(r => `<span style="color:${REGION_COLOR[r]}">■</span> ${r} ${fmtPct(row[r])}`).join("<br>"));
+        const pr = this.prob[state.climate];
+        showTip(e, `<b>${d3.timeFormat("%B %-d")(dt)}</b> · ${CL[state.climate].label}<br><b>${fmt1(d3.sum(this.R, r => row[r]))} GW</b> expected in region-wide heat<br>` + this.R.slice().sort((a, b) => row[b] - row[a]).map(r => `<span style="color:${REGION_COLOR[r]}">■</span> ${r} ${fmt1(row[r])} GW <span class="t-muted">(${fmtPct(pr[r][row.d])} chance)</span>`).join("<br>"));
       }).on("mouseleave", () => { hideTip(); this.cursor.style("display", "none"); });
     // key, ordered as stacked from the bottom
     const key = svg.append("g").attr("transform", `translate(${m.l},${H - 4})`);
@@ -525,8 +523,8 @@ const Stream = {
   },
   update() {
     const st = this.stack(this.data[state.climate]), top = d3.max(st[st.length - 1], p => p[1]);
-    this.y.domain([0, Math.max(0.6, top * 1.15)]).nice();
-    this.ya.transition().duration(DUR).call(d3.axisLeft(this.y).ticks(5).tickFormat(d3.format(".1~f")).tickSize(-this.iw)).call(gridY);
+    this.y.domain([0, Math.max(4, top * 1.12)]).nice();
+    this.ya.transition().duration(DUR).call(d3.axisLeft(this.y).ticks(5).tickFormat(d3.format("~f")).tickSize(-this.iw)).call(gridY);
     this.paths.data(st, s => s.key).transition().duration(DUR).attr("d", this.area);
     const line = d3.line().x((v, i) => this.x(this.days[i])).y(v => this.y(v)).curve(d3.curveBasis);
     this.ghost.transition().duration(DUR).attr("d", line(this.histTotal));
@@ -539,7 +537,7 @@ const Siting = {
     this.map = FieldMap("#co-stage", "#co-canvas");
     const svg = d3.select("#co-map").attr("viewBox", "0 0 975 610"), r = d3.scaleSqrt().domain([0, 2800]).range([2, 12]);
     svg.append("g").selectAll("circle").data(D.us).join("circle").attr("cx", d => d.xy[0]).attr("cy", d => d.xy[1]).attr("r", d => r(d.power))
-      .attr("fill", "#fff").attr("fill-opacity", 0.6).attr("stroke", "#5f6368").attr("stroke-width", 0.7).style("pointer-events", "none");
+      .attr("fill", "#fff").attr("fill-opacity", 0.6).attr("stroke", "#6b645c").attr("stroke-width", 0.7).style("pointer-events", "none");
     const dg = svg.append("g").selectAll("g").data(DOE_SITES).join("g").attr("transform", d => `translate(${projection([d.lon, d.lat])})`).style("pointer-events", "none");
     const halo = dg.append("circle").attr("r", 8).attr("fill", "none").attr("stroke", INK).attr("stroke-width", 1.5);
     dg.append("path").attr("d", d3.symbol(d3.symbolDiamond, 240)()).attr("fill", BLUE).attr("stroke", "#fff").attr("stroke-width", 1.5);
@@ -660,8 +658,8 @@ const Globe = {
     ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
     ctx.drawImage(this.off, 0, 0, this.W, this.H);
     const geo = d3.geoPath(proj, ctx);
-    ctx.beginPath(); geo(d3.geoGraticule10()); ctx.strokeStyle = "rgba(60,64,67,.06)"; ctx.lineWidth = 0.6; ctx.stroke();
-    ctx.beginPath(); geo(this.land); ctx.strokeStyle = "rgba(60,64,67,.5)"; ctx.lineWidth = 0.6; ctx.stroke();
+    ctx.beginPath(); geo(d3.geoGraticule10()); ctx.strokeStyle = "rgba(60,52,44,.06)"; ctx.lineWidth = 0.6; ctx.stroke();
+    ctx.beginPath(); geo(this.land); ctx.strokeStyle = "rgba(60,52,44,.5)"; ctx.lineWidth = 0.6; ctx.stroke();
     const shade = ctx.createRadialGradient(cx - R * 0.35, cy - R * 0.4, R * 0.1, cx, cy, R);
     shade.addColorStop(0, "rgba(255,255,255,.10)"); shade.addColorStop(0.7, "rgba(255,255,255,0)"); shade.addColorStop(1, "rgba(32,33,36,.10)");
     ctx.fillStyle = shade; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 2 * Math.PI); ctx.fill();
@@ -677,7 +675,7 @@ const Globe = {
       const p = proj([h.lon, h.lat]), a = Math.max(0, Math.min(1, (1.25 - dist) / 0.25));
       ctx.globalAlpha = a; ctx.lineWidth = 3.5; ctx.strokeStyle = "rgba(255,255,255,.9)"; ctx.strokeText(h.t, p[0] + 10, p[1]); ctx.fillStyle = INK; ctx.fillText(h.t, p[0] + 10, p[1]); ctx.globalAlpha = 1;
     }
-    ctx.beginPath(); ctx.arc(cx, cy, R, 0, 2 * Math.PI); ctx.strokeStyle = "rgba(60,64,67,.25)"; ctx.lineWidth = 1; ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, 2 * Math.PI); ctx.strokeStyle = "rgba(60,52,44,.25)"; ctx.lineWidth = 1; ctx.stroke();
   },
   update() {
     if (!this.ready) return;
@@ -697,8 +695,8 @@ function writeProse() {
   d3.select("#season-take").html(`We call a day a <b>shared heat day</b> when at least a quarter of planned AI power is in extreme heat at once. Here is every simulated summer in the ensemble. In 1995&ndash;2014 the average summer has <b>${fmt1(mean(HIST))}</b> shared heat days, scattered through July${hist ? "" : `; in ${CL[k].long} it has <b>${fmt1(mean(k))}</b>, spread from June into September`}. Sort the rows to see how consistent the change is across models and years.`);
   const med = d3.median(D.reach.by[k].reach), med0 = d3.median(D.reach.by[HIST].reach);
   d3.select("#reach-take").html(`We say a site is in <b>extreme heat</b> on a day hotter than its <b>design day</b>, the level exceeded on only 1% of days in 1995&ndash;2014, close to the condition cooling systems are sized for${cite(5)}. Each model is compared with its own baseline, so model biases cancel. When one site is in extreme heat, many others usually are too: in ${CL[k].long}, the median site shares its hot days with <b>${fmtPct(med)}</b> of the rest of the fleet${hist ? "" : ` (${fmtPct(med0)} in 1995&ndash;2014)`}.`);
-  const aug = kk => d3.sum(D.streams.by[kk], r => r[212]), r = rKey(k), r0 = rKey(HIST);
-  d3.select("#grids-take").html(`Grid emergencies follow heat across a whole region, as in Texas in September 2023${cite(13)}. We count a <b>region-wide heat day</b> when at least half of a grid region is above its design day. On August 1 in ${CL[k].long}, an expected <b>${fmt1(aug(k))}</b> of seven regions are in region-wide heat${hist ? "" : `, against ${fmt1(aug(HIST))} in 1995&ndash;2014`}. Events also last longer: ${hist ? `${fmtPct(r0.survival[2])} last three days or more` : `the share lasting three days or more rises from ${fmtPct(r0.survival[2])} to <b>${fmtPct(r.survival[2])}</b>`}, while certified data centers must hold only 12 hours of backup fuel${cite(6)}.`);
+  const aug = kk => d3.sum(D.streams.regions, (rg, j) => D.streams.by[kk][j][212] * D.reg.power_gw[D.reg.regions.indexOf(rg)]), r = rKey(k), r0 = rKey(HIST);
+  d3.select("#grids-take").html(`Grid emergencies follow heat across a whole region, as in Texas in September 2023${cite(13)}. We call a day <b>region-wide heat</b> when at least half of a grid region is above its design day. On a typical August 1 in ${CL[k].long}, <b>${fmt1(aug(k))} GW</b> of planned AI power is expected to sit in a region under region-wide heat${hist ? "" : `, against ${fmt1(aug(HIST))} GW in 1995&ndash;2014`}. Events also last longer: ${hist ? `${fmtPct(r0.survival[2])} last three days or more` : `the share lasting three days or more rises from ${fmtPct(r0.survival[2])} to <b>${fmtPct(r.survival[2])}</b>`}, while certified data centers must hold only 12 hours of backup fuel${cite(6)}.`);
   const fc = Siting.fleet(k), doe = DOE_SITES.map(d => ({ ...d, co: sampleGrid(Siting.raw(k), d.lon, d.lat) })).sort((a, c) => a.co - c.co);
   d3.select("#co-take").html(`For a new site, what matters is whether it overheats when the rest of the fleet does. On the fleet's shared heat days in ${CL[k].long}, a planned site is in extreme heat <b>${fmtPct(fc / 100)}</b> of the time. Among DOE's federal AI sites${cite(8)}, ${doe[0].name} is lowest at ${fmtPct(doe[0].co / 100)} and ${doe[3].name} highest at ${fmtPct(doe[3].co / 100)}. The Pacific Northwest, the northern Rockies and New England are usually cool when the fleet is hot.`);
   const intl = D.sites.filter(d => d.country !== "United States"), my = intl.filter(d => d.country === "Malaysia"), uae = intl.find(d => d.name === "OpenAI Stargate UAE");
