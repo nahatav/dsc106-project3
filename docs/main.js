@@ -187,19 +187,26 @@ const Hero = {
   },
 };
 
-/* ---------------- Figure 1: the build-out ---------------- */
+/* ---------------- Figure 1: the build-out as a growing spike map ---------------- */
 const Build = {
   init() {
-    const svg = d3.select("#build").attr("viewBox", "0 0 975 610");
+    const svg = d3.select("#build").attr("viewBox", "0 -40 975 650");
     baseMap(svg);
     const byName = new Map(D.us.map(d => [d.name, d]));
-    this.rows = D.build.sites.map(s => ({ ...byName.get(s.name), s: s.s })).filter(d => d.xy).sort((a, b) => d3.max(b.s) - d3.max(a.s));
+    // draw back to front so nearer (southern) spikes overlap farther ones
+    this.rows = D.build.sites.map(s => ({ ...byName.get(s.name), s: s.s })).filter(d => d.xy).sort((a, b) => a.xy[1] - b.xy[1]);
     this.months = D.build.months.map(m => d3.timeParse("%Y-%m")(m));
     this.totals = this.months.map((_, i) => d3.sum(this.rows, d => d.s[i]));
-    this.r = d3.scaleSqrt().domain([0, 2800]).range([0, 22]);
-    this.dots = svg.append("g").selectAll("circle").data(this.rows).join("circle").attr("cx", d => d.xy[0]).attr("cy", d => d.xy[1]).attr("r", 0)
-      .attr("fill", INK).attr("fill-opacity", 0.28).attr("stroke", INK).attr("stroke-width", 1.1)
+    this.h = d3.scaleLinear().domain([0, 2800]).range([0, 230]);
+    const spike = (len, w = 9) => `M${-w / 2},0L0,${-len}L${w / 2},0`;
+    this.spike = spike;
+    this.spikes = svg.append("g").selectAll("path").data(this.rows).join("path")
+      .attr("transform", d => `translate(${d.xy})`).attr("d", spike(0))
+      .attr("fill", "#a8203b").attr("fill-opacity", 0.22).attr("stroke", "#a8203b").attr("stroke-width", 1).attr("stroke-linejoin", "round")
       .on("mousemove", (e, d) => showTip(e, `<b>${d.name}</b><br><span class="t-muted">${d.owner || ""}</span><br>${fmtGW(d.s[this.i])} online in ${d3.timeFormat("%b %Y")(this.months[this.i])}<br><span class="t-muted">${fmtGW(d.power)} planned</span>`)).on("mouseleave", hideTip);
+    const top = this.rows.slice().sort((a, b) => d3.max(b.s) - d3.max(a.s)).slice(0, 5);
+    this.labels = svg.append("g").selectAll("text").data(top).join("text").attr("class", "map-label small").attr("text-anchor", "middle").attr("opacity", 0)
+      .attr("x", d => d.xy[0]).text(d => shortName(d.name));
     this.stamp = svg.append("text").attr("class", "stamp").attr("x", 24).attr("y", 548);
     this.sub = svg.append("text").attr("class", "stamp-sub").attr("x", 24).attr("y", 574);
     // timeline
@@ -207,14 +214,13 @@ const Build = {
     const g = d3.select("#build-line").attr("viewBox", `0 0 ${W} ${H}`).append("g").attr("transform", `translate(${m.l},${m.t})`);
     const iw = W - m.l - m.r, ih = H - m.t - m.b;
     this.x = d3.scaleTime().domain(d3.extent(this.months)).range([0, iw]);
-    const y = d3.scaleLinear().domain([0, 45]).range([ih, 0]);
+    const y = (this.y = d3.scaleLinear().domain([0, 45]).range([ih, 0]));
     g.append("g").attr("class", "axis").call(d3.axisLeft(y).ticks(3).tickFormat(d => d + " GW").tickSize(-iw)).call(gridY);
     g.append("g").attr("class", "axis").attr("transform", `translate(0,${ih})`).call(d3.axisBottom(this.x).ticks(d3.timeYear).tickFormat(d3.timeFormat("%Y")).tickSize(3)).call(a => a.select(".domain").attr("stroke", "#bdc1c6"));
-    g.append("path").datum(this.totals).attr("fill", "#f1efec").attr("d", d3.area().x((d, i) => this.x(this.months[i])).y0(ih).y1(d => y(d / 1000)));
-    this.prog = g.append("path").datum(this.totals).attr("fill", "none").attr("stroke", BLUE).attr("stroke-width", 2.5);
+    g.append("path").datum(this.totals).attr("fill", WARMGREY).attr("d", d3.area().x((d, i) => this.x(this.months[i])).y0(ih).y1(d => y(d / 1000)));
+    this.prog = g.append("path").attr("fill", "none").attr("stroke", "#a8203b").attr("stroke-width", 2.5);
     this.line = d3.line().x((d, i) => this.x(this.months[i])).y(d => y(d / 1000));
-    this.cursor = g.append("circle").attr("r", 5).attr("fill", HOT).attr("stroke", "#fff").attr("stroke-width", 2);
-    this.y = y;
+    this.cursor = g.append("circle").attr("r", 5).attr("fill", "#a8203b").attr("stroke", "#fff").attr("stroke-width", 2);
     const hit = g.append("rect").attr("width", iw).attr("height", ih).attr("fill", "transparent").style("cursor", "ew-resize");
     const scrub = e => { this.stop(); const t = this.x.invert(d3.pointer(e, hit.node())[0]); this.set(Math.max(0, Math.min(this.months.length - 1, d3.bisectLeft(this.months, t)))); };
     hit.on("pointerdown", function (e) { this.setPointerCapture(e.pointerId); scrub(e); }).on("pointermove", e => { if (e.buttons) scrub(e); });
@@ -224,7 +230,8 @@ const Build = {
   },
   set(i) {
     this.i = i;
-    this.dots.transition().duration(reduceMotion ? 0 : 110).ease(d3.easeLinear).attr("r", d => this.r(d.s[i]));
+    this.spikes.transition().duration(reduceMotion ? 0 : 110).ease(d3.easeLinear).attr("d", d => this.spike(this.h(d.s[i])));
+    this.labels.attr("y", d => d.xy[1] - this.h(d.s[i]) - 8).attr("opacity", d => (d.s[i] > d3.max(d.s) * 0.6 ? 1 : 0));
     this.stamp.text(d3.timeFormat("%B %Y")(this.months[i]));
     this.sub.text(`${(this.totals[i] / 1000).toFixed(1)} GW of planned AI capacity online`);
     this.prog.attr("d", this.line(this.totals.slice(0, i + 1)));
@@ -233,7 +240,7 @@ const Build = {
   play() {
     if (this.i >= this.months.length - 1) this.set(0);
     d3.select("#build-play").html("&#10074;&#10074;").attr("aria-label", "Pause");
-    this.timer = d3.interval(() => { if (this.i >= this.months.length - 1) return this.stop(); this.set(this.i + 1); }, reduceMotion ? 1 : 120);
+    this.timer = d3.interval(() => { if (this.i >= this.months.length - 1) return this.stop(); this.set(this.i + 1); }, reduceMotion ? 1 : 110);
   },
   stop() { if (this.timer) this.timer.stop(); this.timer = null; d3.select("#build-play").html("&#9654;").attr("aria-label", "Play"); },
 };
@@ -287,44 +294,52 @@ const Reach = {
   },
 };
 
-/* ---------------- Figure 3: radial calendar of shared heat days ---------------- */
-const RING_T = [0.02, 0.05, 0.1, 0.2, 0.3, 0.5, 0.7];
-const RING_C = d3.scaleThreshold().domain(RING_T).range(["#f1f3f4", HEAT[1], HEAT[2], HEAT[3], HEAT[4], HEAT[5], HEAT[6], HEAT[7]]);
+/* ---------------- Figure 3: ridgelines of the shared heat season ---------------- */
+const RIDGE_FILL = ["#ece9e4", "#f8c58f", "#f2955f", "#d9573f", "#93183a"];
 const Ring = {
   init() {
-    const W = 720, H = 660, cx = W / 2, cy = H / 2 - 4;
-    const svg = d3.select("#ring").attr("viewBox", `0 0 ${W} ${H}`), g = svg.append("g").attr("transform", `translate(${cx},${cy})`);
-    const r0 = 92, rw = 38, gap = 7;
-    this.radii = CLIMATES.map((c, i) => [r0 + i * (rw + gap), r0 + i * (rw + gap) + rw]);
-    const ang = d => (d / 365) * 2 * Math.PI;
-    const cells = CLIMATES.flatMap((c, ci) => d3.range(365).map(d => ({ ci, d, k: c.key, v: D.season[c.key][d] })));
-    const arc = d3.arc().innerRadius(c => this.radii[c.ci][0]).outerRadius(c => this.radii[c.ci][1]).startAngle(c => ang(c.d)).endAngle(c => ang(c.d + 1) + 0.002);
-    this.cells = g.append("g").selectAll("path").data(cells).join("path").attr("d", arc).attr("fill", "#f1f3f4")
-      .on("mousemove", (e, c) => {
-        const dt = d3.timeDay.offset(new Date(2050, 0, 1), c.d);
-        showTip(e, `<b>${d3.timeFormat("%B %-d")(dt)}</b> · ${CL[c.k].label}<br>A shared heat day in <b>${fmtPct(c.v)}</b> of simulated years`);
-      }).on("mouseleave", hideTip);
-    // months
-    const outer = this.radii[4][1];
-    d3.range(12).forEach(mo => {
-      const d0 = d3.timeDay.count(new Date(2050, 0, 1), new Date(2050, mo, 1)), a = ang(d0) - Math.PI / 2;
-      g.append("line").attr("x1", Math.cos(a) * (r0 - 6)).attr("y1", Math.sin(a) * (r0 - 6)).attr("x2", Math.cos(a) * (outer + 8)).attr("y2", Math.sin(a) * (outer + 8)).attr("stroke", "#fff").attr("stroke-width", 1.5).style("pointer-events", "none");
-      const am = ang(d0 + 15) - Math.PI / 2;
-      g.append("text").attr("class", "axis-title").attr("x", Math.cos(am) * (outer + 22)).attr("y", Math.sin(am) * (outer + 22)).attr("dy", "0.35em").attr("text-anchor", "middle").text(MONTHS[mo]);
+    const W = 720, H = 470, m = { t: 30, r: 20, b: 36, l: 130 };
+    const svg = d3.select("#ring").attr("viewBox", `0 0 ${W} ${H}`), g = svg.append("g").attr("transform", `translate(${m.l},${m.t})`);
+    const iw = W - m.l - m.r, ih = H - m.t - m.b;
+    this.d0 = 120; this.d1 = 290; this.days = d3.range(this.d0, this.d1);
+    const smooth = arr => arr.map((v, i) => d3.mean(arr.slice(Math.max(0, i - 3), i + 4)));
+    this.x = d3.scaleLinear().domain([this.d0, this.d1 - 1]).range([0, iw]);
+    // tallest ridge (2090s, high) at the back/top, 1995-2014 at the front/bottom, so every ridge stays visible
+    this.step = (ih - 175) / (CLIMATES.length - 1);
+    this.base = CLIMATES.map((c, i) => 175 + (CLIMATES.length - 1 - i) * this.step);
+    this.hy = d3.scaleLinear().domain([0, 1]).range([0, 170]);
+    this.series = CLIMATES.map((c, i) => ({ c, i, v: smooth(D.season[c.key]).slice(this.d0, this.d1) }));
+    const months = d3.range(4, 10).map(mo => ({ mo, d: d3.timeDay.count(new Date(2050, 0, 1), new Date(2050, mo, 1)) }));
+    g.append("g").selectAll("line").data(months).join("line").attr("x1", o => this.x(o.d)).attr("x2", o => this.x(o.d)).attr("y1", 0).attr("y2", ih).attr("stroke", "#eeece8");
+    g.append("g").selectAll("text").data(months).join("text").attr("class", "axis-title").attr("x", o => this.x(o.d + 14)).attr("y", ih + 24).attr("text-anchor", "middle").text(o => MONTHS[o.mo]);
+    this.area = (sr, k) => d3.area().x((v, j) => this.x(this.days[j])).y0(this.base[sr.i]).y1(v => this.base[sr.i] - this.hy(v) * k).curve(d3.curveBasis)(sr.v);
+    this.line = (sr, k) => d3.line().x((v, j) => this.x(this.days[j])).y(v => this.base[sr.i] - this.hy(v) * k).curve(d3.curveBasis)(sr.v);
+    this.rows = g.append("g").selectAll("g").data(this.series.slice().reverse()).join("g");
+    this.fills = this.rows.append("path").attr("fill", sr => RIDGE_FILL[sr.i]).attr("d", sr => this.area(sr, 0));
+    this.strokes = this.rows.append("path").attr("fill", "none").attr("stroke", "#fff").attr("stroke-width", 1.5).attr("d", sr => this.line(sr, 0));
+    this.rows.append("line").attr("x1", 0).attr("x2", iw).attr("y1", sr => this.base[sr.i]).attr("y2", sr => this.base[sr.i]).attr("stroke", "#d6d3ce");
+    this.labels = this.rows.append("text").attr("class", "ring-label").attr("x", -12).attr("y", sr => this.base[sr.i] - 4).attr("text-anchor", "end").text(sr => sr.c.label);
+    this.cursor = g.append("line").attr("y1", 0).attr("y2", ih).attr("stroke", INK).style("display", "none");
+    g.append("rect").attr("width", iw).attr("height", ih).attr("fill", "transparent")
+      .on("mousemove", e => {
+        const j = Math.max(0, Math.min(this.days.length - 1, Math.round(this.x.invert(d3.pointer(e)[0])) - this.d0)), dt = d3.timeDay.offset(new Date(2050, 0, 1), this.days[j]);
+        this.cursor.attr("x1", this.x(this.days[j])).attr("x2", this.x(this.days[j])).style("display", null);
+        showTip(e, `<b>${d3.timeFormat("%B %-d")(dt)}</b><br>Chance it is a shared heat day:<br>` + this.series.map(sr => `${sr.c.label}: <b>${fmtPct(sr.v[j])}</b>`).join("<br>"));
+      }).on("mouseleave", () => { hideTip(); this.cursor.style("display", "none"); });
+    g.append("text").attr("class", "axis-title").attr("x", -m.l + 2).attr("y", -12).text("Chance that each day is a shared heat day");
+    // scale bar for ridge height
+    const sb = g.append("g").attr("transform", `translate(${iw - 4},${this.base[4] - this.hy(0.5)})`);
+    sb.append("line").attr("y1", 0).attr("y2", this.hy(0.5)).attr("stroke", INK);
+    sb.append("line").attr("x1", -4).attr("x2", 4).attr("stroke", INK); sb.append("line").attr("x1", -4).attr("x2", 4).attr("y1", this.hy(0.5)).attr("y2", this.hy(0.5)).attr("stroke", INK);
+    sb.append("text").attr("class", "ref-label").attr("x", -8).attr("y", this.hy(0.25)).attr("dy", "0.35em").attr("text-anchor", "end").text("50%");
+    onVisible("#ring", () => {
+      this.fills.transition().duration(reduceMotion ? 0 : 900).delay(sr => (reduceMotion ? 0 : sr.i * 280)).ease(d3.easeCubicOut).attrTween("d", sr => t => this.area(sr, t));
+      this.strokes.transition().duration(reduceMotion ? 0 : 900).delay(sr => (reduceMotion ? 0 : sr.i * 280)).ease(d3.easeCubicOut).attrTween("d", sr => t => this.line(sr, t));
     });
-    // ring labels on the left, reading outward
-    this.labels = g.append("g").selectAll("text").data(CLIMATES).join("text").attr("class", "ring-label")
-      .attr("x", -8).attr("y", (c, i) => -(this.radii[i][0] + this.radii[i][1]) / 2).attr("dy", "0.35em").attr("text-anchor", "end").text(c => c.label);
-    g.append("text").attr("class", "ring-center").attr("y", -8).attr("text-anchor", "middle").text("Shared");
-    g.append("text").attr("class", "ring-center").attr("y", 12).attr("text-anchor", "middle").text("heat days");
-    this.outline = g.append("g").attr("fill", "none").attr("stroke", INK).attr("stroke-width", 1.5);
-    rampLegend("#ring-legend", "Share of years in which the day is a shared heat day", RING_C.range(), [[0, "0%"], [1, "2%"], [3, "10%"], [5, "30%"], [7, "70%"]]);
-    onVisible("#ring", () => this.cells.transition().duration(reduceMotion ? 0 : 500).delay(c => (reduceMotion ? 0 : c.ci * 420 + c.d * 2.2)).attr("fill", c => RING_C(c.v)));
   },
   update() {
-    const i = CLIMATES.findIndex(c => c.key === state.climate), [a, b] = this.radii[i];
-    this.outline.selectAll("circle").data([a, b]).join("circle").transition().duration(DUR).attr("r", d => d);
-    this.labels.style("font-weight", c => (c.key === state.climate ? 600 : 400)).style("fill", c => (c.key === state.climate ? INK : "#5f6368"));
+    this.strokes.attr("stroke", sr => (sr.c.key === state.climate ? INK : "#fff")).attr("stroke-width", sr => (sr.c.key === state.climate ? 2 : 1.5));
+    this.labels.style("font-weight", sr => (sr.c.key === state.climate ? 600 : 400)).style("fill", sr => (sr.c.key === state.climate ? INK : "#5f6368"));
   },
 };
 
