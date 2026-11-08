@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&family=Google+Sans+Code&display=swap">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=10">
 </head>
 <body>
 
@@ -34,12 +34,14 @@
 <p>AI data centers are approved one at a time: through federal permitting<a class="cite" href="#r7">7</a>, on federal land<a class="cite" href="#r8">8</a> and in grid connection rules<a class="cite" href="#r9">9</a><span class="cite-sep">,</span><a class="cite" href="#r10">10</a>. Climate risk studies also assess sites one at a time<a class="cite" href="#r15">15</a><span class="cite-sep">,</span><a class="cite" href="#r16">16</a>. Heat waves, however, span hundreds of kilometers and can stress several power grids at once<a class="cite" href="#r17">17</a>. Here we describe how this shared exposure grows as the planet warms.</p>
 
 <section id="fleet">
-  <h2>A fleet built in a few years</h2>
-  <p>Planned AI capacity in the United States grows from 0.1 GW in early 2023 to 43 GW by 2030, according to construction timelines compiled by Epoch AI<a class="cite" href="#r1">1</a>. Most of it sits in a few clusters across the Midwest, Texas and the Southeast.</p>
+  <h2>Who is building, and where</h2>
+  <p id="fleet-take">&nbsp;</p>
   <figure class="fig">
-    <div class="fig-stage"><svg id="build" role="img" aria-label="Animated spike map of planned AI data center power by month, 2022 to 2030"></svg></div>
-    <div class="player-row"><button class="play" id="build-play" aria-label="Play">&#9654;</button><svg id="build-line" role="img" aria-label="Total planned power over time; drag to scrub"></svg></div>
-    <figcaption><b>Figure 1.</b> Each spike is one of 77 planned US AI data centers; its height is the power online that month, January 2022 to December 2030. Press play or drag along the chart.</figcaption>
+    <div class="view-chips seg" id="swarm-views">
+      <button data-v="where" class="on">Where</button><button data-v="who">Who</button><button data-v="grid">Which grid</button><button data-v="when">When</button>
+    </div>
+    <div class="fig-stage"><svg id="swarm" role="img" aria-label="The 77 planned US AI data centers as bubbles sized by planned power, rearranging by location, company, grid region and year online"></svg></div>
+    <figcaption><b>Figure 1.</b> Each bubble is one of 77 planned US AI data centers, sized by planned power. The bubbles rearrange to show where they are, who is building them, which power grid they join and when their power comes online. Hover a bubble.</figcaption>
   </figure>
 </section>
 
@@ -68,11 +70,12 @@
 </section>
 
 <section id="season">
-  <h2>A longer season of shared heat</h2>
+  <h2>Every simulated summer</h2>
   <p id="season-take">&nbsp;</p>
   <figure class="fig">
-    <div class="fig-stage"><svg id="ring" role="img" aria-label="Ridgeline chart of the shared heat season, one ridge per climate"></svg></div>
-        <figcaption><b>Figure 3.</b> Chance that each day from May to September is a shared heat day, one ridge per climate, ten models and 20 years pooled. The outlined ridge is the climate selected above. Hover for values.</figcaption>
+    <div class="view-chips seg" id="mosaic-sort"><button data-v="model" class="on">Grouped by model</button><button data-v="sorted">Sorted by shared heat days</button></div>
+    <div class="fig-stage"><canvas id="mosaic" aria-label="Mosaic of 200 simulated summers, with shared heat days marked"></canvas></div>
+    <figcaption><b>Figure 3.</b> Each row is one simulated summer (10 models &times; 20 years) and each column one day from May to September. Red marks a shared heat day, when at least a quarter of planned US AI power is in extreme heat at once. Left: 1995&ndash;2014. Right: the climate selected above. Hover a row.</figcaption>
   </figure>
 </section>
 
@@ -158,9 +161,9 @@
   <nav class="quick" aria-label="Quick links">
     <p class="quick-title">Quick links</p>
     <ol>
-      <li><a href="#fleet">A fleet built in a few years</a></li>
+      <li><a href="#fleet">Who is building, and where</a></li>
       <li><a href="#reach">One heat wave, many data centers</a></li>
-      <li><a href="#season">A longer season of shared heat</a></li>
+      <li><a href="#season">Every simulated summer</a></li>
       <li><a href="#grids">Heat spreads across power grids</a></li>
       <li><a href="#siting">Where the next gigawatt should go</a></li>
       <li><a href="#world">The same physics worldwide</a></li>
@@ -174,6 +177,6 @@
 <div id="tip" class="tip" role="tooltip"></div>
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
-<script src="main.js"></script>
+<script src="main.js?v=10"></script>
 </body>
 </html>

@@ -351,3 +351,11 @@ svg text.stream-label { font-size: 13px; font-weight: 600; fill: #fff; paint-ord
 .player-row .play { background: #202124; }
 .hero-anim { background: #f6f5f2; }
 a.cite, .refs a { color: #a8203b; }
+
+/* swarm and mosaic */
+.view-chips { margin: 0 0 12px; }
+.view-chips button { font-size: 14px; }
+.view-chips button.on { background: #202124; color: #fff; border-color: #202124; }
+#mosaic { display: block; width: 100%; }
+svg text.swarm-label { font-size: 17px; font-weight: 500; fill: #202124; }
+svg text.swarm-sub { font-size: 14px; fill: #5f6368; }
