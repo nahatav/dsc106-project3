@@ -357,5 +357,19 @@ a.cite, .refs a { color: #a8203b; }
 .view-chips button { font-size: 14px; }
 .view-chips button.on { background: #202124; color: #fff; border-color: #202124; }
 #mosaic { display: block; width: 100%; }
-svg text.swarm-label { font-size: 17px; font-weight: 500; fill: #202124; }
-svg text.swarm-sub { font-size: 14px; fill: #5f6368; }
+svg text.flow-name { font-size: 15px; fill: #202124; }
+svg tspan.flow-val { fill: #80868b; font-size: 13px; }
+svg text.flow-head { font-size: 13px; fill: #80868b; letter-spacing: .06em; text-transform: uppercase; }
+svg text.flow-date { font-size: 13px; font-weight: 500; fill: #a8203b; }
+svg text.flow-tick { font-size: 13px; fill: #5f6368; }
+
+svg text.region-label { font-size: 12px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; fill: #6d665e; paint-order: stroke; stroke: #f1efec; stroke-width: 3px; stroke-linejoin: round; }
+.legend-row .lg-item { display: inline-flex; align-items: center; gap: 6px; margin-right: 18px; font-size: 13px; color: #5f6368; }
+.legend-row .lg-item svg { display: inline-block; width: auto; height: auto; margin: 0; flex: none; }
+.legend-row:has(.lg-item) { display: flex; flex-wrap: wrap; justify-content: center; row-gap: 6px; margin-top: 6px; }
+#fleet-co button { font-size: 13px; padding: 5px 13px; }
+@media (max-width: 600px) {
+  #fleetmap text.flow-tick { font-size: 24px; }
+  #fleetmap text.flow-date { font-size: 26px; }
+  #fleetmap text.region-label { font-size: 20px; stroke-width: 5px; }
+}

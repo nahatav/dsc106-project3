@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&family=Google+Sans+Code&display=swap">
-<link rel="stylesheet" href="style.css?v=10">
+<link rel="stylesheet" href="style.css?v=15">
 </head>
 <body>
 
@@ -37,11 +37,15 @@
   <h2>Who is building, and where</h2>
   <p id="fleet-take">&nbsp;</p>
   <figure class="fig">
-    <div class="view-chips seg" id="swarm-views">
-      <button data-v="where" class="on">Where</button><button data-v="who">Who</button><button data-v="grid">Which grid</button><button data-v="when">When</button>
+    <div class="view-chips seg" id="fleet-co" role="group" aria-label="Highlight a company"></div>
+    <div class="fig-stage"><svg id="fleetmap" role="img" aria-label="Map of the 77 planned US AI data centers, sized by planned power, filling in as their power comes online from 2023 to 2030, over shaded grid regions"></svg></div>
+    <div class="legend-row">
+      <span class="lg-item"><svg width="16" height="16"><circle cx="8" cy="8" r="6.5" fill="#a8203b" fill-opacity=".85" stroke="#fff"/></svg>Power online</span>
+      <span class="lg-item"><svg width="16" height="16"><circle cx="8" cy="8" r="6.5" fill="#fff" stroke="#8d877f"/></svg>Planned by 2030</span>
+      <span class="lg-item"><svg width="18" height="34"><circle cx="9" cy="25" r="8" fill="none" stroke="#8d877f"/></svg>0.5 GW<svg width="34" height="34" style="margin-left:10px"><circle cx="17" cy="17" r="16" fill="none" stroke="#8d877f"/></svg>2 GW</span>
+      <span class="lg-item"><svg width="16" height="16"><rect x="1" y="2" width="14" height="12" fill="#b8323e" fill-opacity=".22"/></svg>Grid regions, as in Figure 4</span>
     </div>
-    <div class="fig-stage"><svg id="swarm" role="img" aria-label="The 77 planned US AI data centers as bubbles sized by planned power, rearranging by location, company, grid region and year online"></svg></div>
-    <figcaption><b>Figure 1.</b> Each bubble is one of 77 planned US AI data centers, sized by planned power. The bubbles rearrange to show where they are, who is building them, which power grid they join and when their power comes online. Hover a bubble.</figcaption>
+    <figcaption><b>Figure 1.</b> The 77 planned US AI data centers, sized by planned power. Discs fill in as each site's power comes online, from construction timelines compiled by Epoch AI. Shading marks grid regions, approximated by states. Press play or drag the timeline; hover a site or region; click a site to see its heat reach in Figure 2.</figcaption>
   </figure>
 </section>
 
@@ -177,6 +181,6 @@
 <div id="tip" class="tip" role="tooltip"></div>
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
-<script src="main.js?v=10"></script>
+<script src="main.js?v=15"></script>
 </body>
 </html>

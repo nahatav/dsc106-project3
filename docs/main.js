@@ -23,6 +23,7 @@ const DOE_SITES = [
   { name: "Paducah site", lat: 37.11, lon: -88.80, dx: -12, dy: -8, anchor: "end" },
   { name: "Savannah River Site", lat: 33.25, lon: -81.65, dx: 12, dy: 10, anchor: "start" },
 ];
+const ACCENT = "#a8203b";
 const REGION_COLOR = { MISO: "#7a1f3d", PJM: "#b8323e", ERCOT: "#de6a3f", West: "#e9a23b", Southeast: "#a8704a", SPP: "#f3c98b", NYISO: "#8e6c8a" };
 const HEAT = ["#fdf8f0", "#fde9c9", "#fccf96", "#f9ad6a", "#f2844f", "#e05a3f", "#c13639", "#93183a", "#5f0a33"];
 const PROB_T = [10, 20, 30, 40, 50, 60, 70, 80];
@@ -67,7 +68,7 @@ Promise.all(["sites", "summary", "regions", "reach", "coexposure", "buildout", "
     D.usGW = d3.sum(D.us, d => d.power);
     d3.select("#model-list").text(D.models.join(", "));
     setupGeo();
-    Hero.init(); Swarm.init(); Reach.init(); Mosaic.init(); Stream.init(); Siting.init(); Globe.init();
+    Hero.init(); Fleet.init(); Reach.init(); Mosaic.init(); Stream.init(); Siting.init(); Globe.init();
     d3.selectAll("#seg-climate button").on("click", function () { setClimate(this.dataset.k); });
     initQuickLinks();
     setClimate(state.climate);
@@ -187,71 +188,91 @@ const Hero = {
   },
 };
 
-/* ---------------- Figure 1: a force-directed swarm of the fleet ---------------- */
-const OWNER_COLOR = { OpenAI: "#7a1f3d", Meta: "#b8323e", Google: "#de6a3f", Microsoft: "#e9a23b", Amazon: "#a8704a", xAI: "#3c3a37", CoreWeave: "#d9b382", Other: "#c9c3bb" };
-const ownerOf = d => (/Stargate/.test(d.name) ? "OpenAI" : d.owner === "SpaceXAI" ? "xAI" : OWNER_COLOR[d.owner] ? d.owner : "Other");
-const Swarm = {
+/* ---------------- Figure 1: the fleet on the map, coming online ---------------- */
+const ownerOf = d => (/Stargate/.test(d.name) ? "OpenAI" : d.owner === "SpaceXAI" ? "xAI" : ["Meta", "Google", "Microsoft", "Amazon", "CoreWeave"].includes(d.owner) ? d.owner : "Other");
+const REGION_LABEL_AT = { West: [-40, 20], SPP: [0, -6], ERCOT: [10, 22], MISO: [-34, -40], PJM: [10, -58], Southeast: [10, 46], NYISO: [6, -16] };
+const Fleet = {
   init() {
-    const W = 975, H = 610, svg = (this.svg = d3.select("#swarm").attr("viewBox", `0 0 ${W} ${H}`));
-    this.W = W; this.H = H;
-    this.base = svg.append("g"); baseMap(this.base);
-    const first = new Map(D.build.sites.map(b => { const i = b.s.findIndex(v => v > 0); return [b.name, i < 0 ? 2030 : +D.build.months[i].slice(0, 4)]; }));
-    const r = d3.scaleSqrt().domain([0, 2800]).range([0, 34]);
-    this.nodes = D.us.map(d => ({ ...d, r: Math.max(3.5, r(d.power)), group: ownerOf(d), year: Math.max(2023, first.get(d.name) || 2030), x: d.xy[0], y: d.xy[1] }));
-    this.axis = svg.append("g").attr("opacity", 0);
-    this.labels = svg.append("g");
-    this.circles = svg.append("g").selectAll("circle").data(this.nodes).join("circle").attr("r", d => d.r).attr("fill", d => OWNER_COLOR[d.group]).attr("fill-opacity", 0.9).attr("stroke", "#fff").attr("stroke-width", 1.2)
-      .on("mousemove", (e, d) => showTip(e, `<b>${d.name}</b><br><span class="t-muted">${d.group}${d.grid ? " · " + d.grid : ""}</span><br>${fmtGW(d.power)} planned · power online from ${d.year}`)).on("mouseleave", hideTip);
-    this.sim = d3.forceSimulation(this.nodes).alphaDecay(0.035).velocityDecay(0.32)
-      .force("x", d3.forceX(d => d.tx).strength(0.12)).force("y", d3.forceY(d => d.ty).strength(0.12)).force("c", d3.forceCollide(d => d.r + 1.2).iterations(2))
-      .on("tick", () => this.circles.attr("cx", d => d.x).attr("cy", d => d.y)).stop();
-    d3.selectAll("#swarm-views button").on("click", e => { this.stopTour(); this.layout(e.currentTarget.dataset.v); });
-    this.layout("where", true);
-    onVisible("#swarm", () => this.tour());
+    const W = 975, H = 690, svg = (this.svg = d3.select("#fleetmap").attr("viewBox", `0 0 ${W} ${H}`)), path = d3.geoPath();
+    const lower48 = D.topo.objects.states.geometries.filter(g => !["02", "15"].includes(g.id));
+    const regionOf = new Map(Object.entries(D.reg.states).flatMap(([r, ss]) => ss.map(st => [st, r])));
+    const ser = new Map(D.build.sites.map(b => [b.name, b.s]));
+    this.months = D.build.months;
+    this.sites = D.us.map(d => ({ ...d, co: ownerOf(d), s: ser.get(d.name) || [], on: 0 })).sort((p, q) => q.power - p.power);
+    this.regs = Object.keys(D.reg.states).map(r => ({ name: r, shape: topojson.merge(D.topo, lower48.filter(g => regionOf.get(g.properties.name) === r)), sites: this.sites.filter(d => d.region === r) }));
+    // basemap: grid regions as faint washes of their Figure 4 colours
+    svg.append("path").datum(G.nation).attr("d", path).attr("fill", WARMGREY);
+    this.wash = svg.append("g").selectAll("path").data(this.regs).join("path").attr("d", r => path(r.shape)).attr("fill", r => REGION_COLOR[r.name]).attr("fill-opacity", 0.1);
+    svg.append("path").datum(G.states).attr("d", path).attr("fill", "none").attr("stroke", "#fff").attr("stroke-width", 0.7).style("pointer-events", "none");
+    svg.append("g").style("pointer-events", "none").selectAll("path").data(this.regs).join("path").attr("d", r => path(r.shape)).attr("fill", "none").attr("stroke", "#fff").attr("stroke-width", 2.4);
+    svg.append("g").style("pointer-events", "none").selectAll("text").data(this.regs).join("text").attr("class", "region-label")
+      .attr("transform", r => { const [cx, cy] = path.centroid(r.shape), o = REGION_LABEL_AT[r.name] || [0, 0]; return `translate(${cx + o[0]},${cy + o[1]})`; }).attr("text-anchor", "middle").text(r => r.name);
+    // sites: a thin ring at planned size, a disc that grows as power comes online
+    const r = (this.r = d3.scaleSqrt().domain([0, 2800]).range([0, 19]));
+    const sg = svg.append("g").style("pointer-events", "none").selectAll("g").data(this.sites).join("g").attr("transform", d => `translate(${d.xy[0]},${d.xy[1]})`);
+    this.sg = sg;
+    sg.append("circle").attr("r", d => Math.max(2.5, r(d.power))).attr("fill", "#fff").attr("fill-opacity", 0.55).attr("stroke", "#8d877f").attr("stroke-width", 0.8);
+    this.discs = sg.append("circle").attr("fill", ACCENT).attr("fill-opacity", 0.85).attr("stroke", "#fff").attr("stroke-width", 0.7).attr("r", 0);
+    this.pulses = svg.append("g").style("pointer-events", "none");
+    this.hl = svg.append("circle").attr("fill", "none").attr("stroke", INK).attr("stroke-width", 2).style("pointer-events", "none").attr("opacity", 0);
+    // hover a site or a region; click a site to open it in Figure 2
+    const del = d3.Delaunay.from(this.sites, d => d.xy[0], d => d.xy[1]);
+    const nearest = e => { const [mx, my] = d3.pointer(e, svg.node()), d = this.sites[del.find(mx, my)]; return Math.hypot(d.xy[0] - mx, d.xy[1] - my) < Math.max(14, r(d.power) + 6) ? d : null; };
+    svg.on("mousemove", e => {
+      const d = nearest(e), reg = d ? this.regs.find(g => g.name === d.region) : d3.select(e.target).datum();
+      if (d) { this.hl.attr("opacity", 1).attr("cx", d.xy[0]).attr("cy", d.xy[1]).attr("r", Math.max(4, r(d.power)) + 3); svg.style("cursor", "pointer"); showTip(e, this.siteTip(d)); }
+      else { this.hl.attr("opacity", 0); svg.style("cursor", null); if (reg && reg.shape) showTip(e, this.regTip(reg)); else hideTip(); }
+      this.focusRegion(reg && reg.shape ? reg.name : null);
+    }).on("mouseleave", () => { hideTip(); this.hl.attr("opacity", 0); this.focusRegion(null); })
+      .on("click", e => { const d = nearest(e); if (!d) return; hideTip(); Reach.picked = true; Reach.stopTour(); Reach.pin = d.name; Reach.show(d.name, true); document.getElementById("reach").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" }); });
+    // company filter
+    const cos = d3.rollups(this.sites, a => d3.sum(a, d => d.power), d => d.co).filter(c => c[0] !== "Other").sort((p, q) => q[1] - p[1]).map(c => c[0]);
+    d3.select("#fleet-co").selectAll("button").data([null, ...cos]).join("button").text(c => c || "All").classed("on", c => !c)
+      .on("click", (e, c) => { this.co = c; d3.selectAll("#fleet-co button").classed("on", x => x === c); sg.transition().duration(350).attr("opacity", d => (!c || d.co === c ? 1 : 0.12)); });
+    // timeline
+    const x = (this.x = d3.scaleLinear().domain([2023, 2031]).range([150, 835]).clamp(true)), tl = svg.append("g").attr("transform", `translate(0,${H - 46})`);
+    tl.append("line").attr("x1", x.range()[0]).attr("x2", x.range()[1]).attr("stroke", "#e4e0da").attr("stroke-width", 3).attr("stroke-linecap", "round");
+    this.prog = tl.append("line").attr("x1", x.range()[0]).attr("stroke", ACCENT).attr("stroke-width", 3).attr("stroke-linecap", "round");
+    tl.selectAll(".tk").data(d3.range(2023, 2032)).join("line").attr("x1", x).attr("x2", x).attr("y1", -4).attr("y2", 4).attr("stroke", "#c9c3bb");
+    tl.selectAll(".tl").data(d3.range(2023, 2031)).join("text").attr("class", "flow-tick").attr("x", y => x(y + 0.5)).attr("y", 24).attr("text-anchor", "middle").text(y => y);
+    this.date = tl.append("text").attr("class", "flow-date").attr("y", -16).attr("text-anchor", "middle");
+    this.head = tl.append("circle").attr("r", 7).attr("fill", "#fff").attr("stroke", ACCENT).attr("stroke-width", 2.5);
+    const btn = tl.append("g").attr("transform", `translate(${x.range()[0] - 42},0)`).style("cursor", "pointer").on("click", e => { e.stopPropagation(); this.timer ? this.pause() : this.play(); });
+    btn.append("circle").attr("r", 15).attr("fill", INK);
+    this.icon = btn.append("path").attr("fill", "#fff");
+    tl.append("rect").attr("x", x.range()[0] - 10).attr("width", x.range()[1] - x.range()[0] + 20).attr("y", -16).attr("height", 46).attr("fill", "transparent").style("cursor", "ew-resize")
+      .on("mousemove", e => e.stopPropagation()).call(d3.drag().on("start drag", e => { this.pause(); this.set(x.invert(e.x)); }));
+    this.set(2023); this.setIcon(false);
+    onVisible("#fleetmap", () => (reduceMotion ? this.set(2031) : this.play()), 0.45);
   },
-  clusters(key, names, cols) {
-    const rows = Math.ceil(names.length / cols), cw = this.W / cols, ch = (this.H - 40) / rows, out = {};
-    names.forEach((n, i) => { out[n] = { x: cw * (i % cols) + cw / 2, y: 70 + ch * Math.floor(i / cols) + ch / 2 - 10 }; });
-    return out;
+  idx() { return Math.max(0, Math.min(this.months.length - 1, Math.floor((this.t - 2022) * 12) - 1)); },
+  when() { return d3.timeFormat("%B %Y")(d3.timeParse("%Y-%m")(this.months[this.idx()])); },
+  siteTip(d) { return `<b>${d.name}</b><br><span class="t-muted">${d.co === "Other" ? d.owner || "Other" : d.co} · ${d.grid || d.region}</span><br>${fmtGW(d.on)} of ${fmtGW(d.power)} online by ${this.when()}<br><span class="t-muted">Click to see its heat reach</span>`; },
+  regTip(g) { const on = d3.sum(g.sites, d => d.on), pl = d3.sum(g.sites, d => d.power); return `<b>${g.name}</b><br>${g.sites.length} data centers<br>${fmtGW(on)} of ${fmtGW(pl)} online by ${this.when()}`; },
+  focusRegion(name) {
+    if (name === this.fr) return; this.fr = name;
+    this.wash.transition().duration(250).attr("fill-opacity", g => (!name ? 0.1 : g.name === name ? 0.3 : 0.05));
   },
-  layout(v, instant) {
-    this.view = v;
-    d3.selectAll("#swarm-views button").classed("on", function () { return this.dataset.v === v; });
-    this.base.transition().duration(600).attr("opacity", v === "where" ? 1 : 0);
-    this.axis.transition().duration(600).attr("opacity", v === "when" ? 1 : 0);
-    let lab = [];
-    if (v === "where") this.nodes.forEach(d => { d.tx = d.xy[0]; d.ty = d.xy[1]; });
-    if (v === "who" || v === "grid") {
-      const key = v === "who" ? "group" : "region";
-      const tot = d3.rollup(this.nodes, a => d3.sum(a, d => d.power), d => d[key]);
-      const names = [...tot.keys()].sort((a, b) => tot.get(b) - tot.get(a));
-      const C = this.clusters(key, names, 4);
-      this.nodes.forEach(d => { d.tx = C[d[key]].x; d.ty = C[d[key]].y; });
-      const R = d3.rollup(this.nodes, a => Math.sqrt(d3.sum(a, d => (d.r + 1.2) ** 2)) * 1.12, d => d[key]);
-      lab = names.map(n => ({ t: n, sub: fmtGW(tot.get(n)), x: C[n].x, y: C[n].y - R.get(n) - 34 }));
-    }
-    if (v === "when") {
-      const x = d3.scaleLinear().domain([2022.5, 2030.5]).range([70, this.W - 70]);
-      this.nodes.forEach(d => { d.tx = x(d.year); d.ty = this.H / 2; });
-      this.axis.selectAll("*").remove();
-      this.axis.append("g").attr("transform", `translate(0,${this.H - 40})`).call(d3.axisBottom(x).tickValues(d3.range(2023, 2031)).tickFormat(d => (d === 2030 ? "2030+" : d)).tickSize(0)).call(a => a.select(".domain").attr("stroke", "#d6d3ce")).selectAll("text").attr("class", "axis-title").attr("dy", "1.2em").style("font-size", "15px");
-      this.axis.append("text").attr("class", "axis-title").attr("x", this.W / 2).attr("y", this.H - 64).attr("text-anchor", "middle").style("font-size", "14px").text("Year each site's first power comes online");
-    }
-    const L = this.labels.selectAll("g").data(lab, d => d.t).join(e => { const g = e.append("g").attr("opacity", 0); g.append("text").attr("class", "swarm-label"); g.append("text").attr("class", "swarm-sub").attr("dy", "1.25em"); return g; });
-    L.attr("transform", d => `translate(${d.x},${Math.max(18, d.y)})`);
-    L.select(".swarm-label").attr("text-anchor", "middle").text(d => d.t); L.select(".swarm-sub").attr("text-anchor", "middle").text(d => d.sub);
-    L.transition().delay(350).duration(500).attr("opacity", 1);
-    this.labels.selectAll("g").filter(d => !lab.find(l => l.t === d.t)).transition().duration(300).attr("opacity", 0).remove();
-    this.sim.force("x").x(d => d.tx); this.sim.force("y").y(d => d.ty);
-    if (instant) { this.nodes.forEach(d => { d.x = d.tx; d.y = d.ty; }); this.sim.alpha(0.4); for (let i = 0; i < 120; i++) this.sim.tick(); this.circles.attr("cx", d => d.x).attr("cy", d => d.y); }
-    else this.sim.alpha(0.9).restart();
+  set(t) {
+    const playing = !!this.timer; this.t = t; const i = this.idx(), r = this.r;
+    this.sites.forEach(d => { const was = d.on; d.on = Math.min(d.power, d.s[i] || 0); if (playing && was === 0 && d.on > 0 && (!this.co || d.co === this.co)) this.pulse(d); });
+    this.discs.attr("r", d => (d.on > 0 ? Math.max(2, r(d.on)) : 0));
+    this.prog.attr("x2", this.x(t)); this.head.attr("cx", this.x(t));
+    this.date.attr("x", this.x(t)).text(d3.timeFormat("%b %Y")(d3.timeParse("%Y-%m")(this.months[i])));
   },
-  tour() {
-    if (reduceMotion) return;
-    const seq = ["who", "grid", "when", "where"]; let i = 0;
-    this.timer = d3.interval(() => { this.layout(seq[i]); i += 1; if (i >= seq.length) this.stopTour(); }, 3800);
+  pulse(d) {
+    const r0 = Math.max(3, this.r(d.power));
+    this.pulses.append("circle").attr("cx", d.xy[0]).attr("cy", d.xy[1]).attr("r", r0).attr("fill", "none").attr("stroke", ACCENT).attr("stroke-width", 1.5).attr("opacity", 0.9)
+      .transition().duration(1100).ease(d3.easeCubicOut).attr("r", r0 + 18).attr("opacity", 0).remove();
   },
-  stopTour() { if (this.timer) this.timer.stop(); this.timer = null; },
+  play() {
+    if (this.t >= 2030.99) this.set(2023);
+    const t0 = performance.now(), from = this.t, dur = 9000 * (2031 - from) / 8;
+    this.timer = d3.timer(() => { const u = Math.min(1, (performance.now() - t0) / dur); this.set(from + (2031 - from) * u); if (u >= 1) this.pause(); });
+    this.setIcon(true);
+  },
+  pause() { if (this.timer) this.timer.stop(); this.timer = null; this.setIcon(false); },
+  setIcon(playing) { this.icon.attr("d", playing ? "M-5,-6h3.5v12h-3.5zM1.5,-6h3.5v12h-3.5z" : "M-4,-7L7,0L-4,7z"); },
 };
 
 /* ---------------- Figure 2: reach, with an automatic tour ---------------- */
@@ -281,7 +302,7 @@ const Reach = {
     onVisible("#rc-stage", () => this.startTour());
   },
   startTour() {
-    if (reduceMotion) return;
+    if (reduceMotion || this.picked) return;
     let i = 0;
     this.tour = d3.interval(() => { i = (i + 1) % TOUR.length; this.pin = TOUR[i]; this.show(TOUR[i]); }, 3400);
   },
