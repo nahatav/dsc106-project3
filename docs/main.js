@@ -55,7 +55,7 @@ Promise.all(["sites", "regions", "coexposure", "buildout", "streams", "siting", 
     D.usGW = d3.sum(D.us, d => d.power);
     d3.select("#model-list").text(D.models.join(", "));
     setupGeo();
-    Explorer.init(); Build.init(); Replay.init(); Warming.init(); Duration.init(); Gov.init();
+    Explorer.init(); Reach.init(); Replay.init(); Warming.init(); Duration.init(); Gov.init();
     d3.selectAll("#ex-climate button").on("click", function () { setClimate(this.dataset.k); });
     d3.select("#share-link").on("click", e => { e.preventDefault(); navigator.clipboard && navigator.clipboard.writeText(location.href.split("#")[0]); d3.select("#share-link span").text("Link copied"); });
     setClimate(state.climate);
@@ -66,7 +66,7 @@ function setClimate(k) {
   state.climate = k;
   d3.selectAll("#ex-climate button").classed("on", function () { return this.dataset.k === k; });
   Explorer.update();
-  if (Build.ready) Build.recolor();
+  if (Reach.ready) Reach.recolor();
   writeProse();
 }
 
@@ -167,9 +167,8 @@ const Explorer = {
     legendRamp("#ex-legend", "Siting risk, ranked across counties", RISK7, [[0, "Lowest"], [1, "Highest"]]);
     legendItems("#ex-legend", [{ type: "outline", color: INK, label: "Ten best areas" }, { type: "square", color: INK, label: "DOE selected federal site" }, { type: "outline", color: "#5f6368", label: "Other DOE candidate site" }]);
     // pointer
-    this.paths.on("mousemove", (e, d) => { this.hl.attr("d", path(d.f)); this.card(d); const near = this.doeAt(e); showTip(e, near ? `<b>${near.name}</b><br><span class="t-muted">DOE ${near.sel ? "selected" : "candidate"} federal site, ${d.name}${d.ab ? ", " + d.ab : ""}</span><br>Better than <b>${fmtPct(d.better)}</b> of counties` : `<b>${d.name}${d.ab ? ", " + d.ab : ""}</b><br>Better than <b>${fmtPct(d.better)}</b> of counties<br><span class="t-muted">Click to pin</span>`); })
-      .on("mouseleave", () => { this.hl.attr("d", null); this.card(this.pin || this.picks[0]); hideTip(); })
-      .on("click", (e, d) => { this.pin = d; this.pinG.attr("d", path(d.f)); this.card(d); });
+    this.paths.on("mousemove", (e, d) => { this.hl.attr("d", path(d.f)); showTip(e, this.tipHtml(d, this.doeAt(e))); })
+      .on("mouseleave", () => { this.hl.attr("d", null); hideTip(); });
     this.path = path; this.svgNode = svg.node();
     d3.select("#ex-criteria").selectAll("button").data(EX_CRIT).join("button").attr("class", "crit on").html(c => `<span class="ck"></span>${c.label}`)
       .on("click", (e, c) => { if (c.on && EX_CRIT.filter(x => x.on).length === 1) return; c.on = !c.on; d3.select(e.currentTarget).classed("on", c.on); this.update(true); writeProse(); });
@@ -194,24 +193,15 @@ const Explorer = {
     g.select("path").attr("d", d => this.path(d.f)).attr("fill", "none").attr("stroke", INK).attr("stroke-width", 2.2);
     g.select("rect").attr("x", d => d.c[0] - 9).attr("y", d => d.c[1] - 33);
     g.select("text").attr("x", d => d.c[0]).attr("y", d => d.c[1] - 20).text((d, i) => i + 1);
-    d3.select("#ex-list").selectAll("li").data(this.picks, d => d.id).join("li").order()
-      .html((d, i) => `<span class="pk-n">${i + 1}</span><span class="pk-t"><b>${d.name}${d.ab ? ", " + d.ab : ""}</b><br><span class="t-muted">${d.gov === "CAISO" ? "California market" : d.region} · hot on ${fmtPct(d.co / 100)} of fleet shared heat days · ${Math.round(d.hot)} day${Math.round(d.hot) === 1 ? "" : "s"} above 35&deg;C</span></span>`)
-      .on("mouseenter", (e, d) => { this.hl.attr("d", this.path(d.f)); this.card(d); }).on("mouseleave", () => { this.hl.attr("d", null); this.card(this.pin || this.picks[0]); })
-      .on("click", (e, d) => { this.pin = d; this.pinG.attr("d", this.path(d.f)); this.card(d); });
-    this.card(this.pin || this.picks[0]);
   },
-  card(d) {
-    if (!d) return;
-    const tot = this.cs.length, rows = [
-      ["co", "Shared heat with the fleet", `In extreme heat on ${fmtPct(d.co / 100)} of the fleet's shared heat days; a 1 GW campus here would ${d.delta <= 0 ? "cut" : "add"} ${fmt1(Math.abs(d.delta))} shared heat days a year`],
-      ["ext", "Local extreme heat", `${Math.round(d.ext)} days a year above its design-day temperature`],
-      ["hot", "Cooling burden", `${Math.round(d.hot)} day${Math.round(d.hot) === 1 ? "" : "s"} a year above 35&deg;C`],
-      ["grid", "Grid concentration", `${d.gov === "CAISO" ? "California, West" : d.region}: ${fmt1(this.gw[d.region])} GW of AI already planned (${fmtPct(d.grid)} of the fleet)`],
-    ];
-    d3.select("#ex-card").html(`<div class="ex-head"><b>${d.name}${d.ab ? ", " + d.ab : ""}</b><span>${d.rank === 1 ? `Best of ${d3.format(",")(tot)} counties` : `Rank ${d3.format(",")(d.rank)} of ${d3.format(",")(tot)} counties · better than ${d3.format(".1%")(d.better).replace(".0%", "%")}`}</span></div>` +
-      rows.map(([k, lab, txt]) => { const c = EX_CRIT.find(x => x.k === k), good = 1 - d["r_" + k]; return `<div class="ex-row${c.on ? "" : " off"}"><span class="ex-lab">${lab}</span><span class="ex-bar"><i style="width:${(good * 100).toFixed(1)}%"></i></span><span class="ex-txt">${txt}</span></div>`; }).join("") +
-      `<p class="ex-gov"><b>Who sets the rules:</b> ${GOV_LONG[d.gov]}.</p>`);
+  tipHtml(d, doe) {
+    const tot = this.cs.length, row = (k, lab, val) => { const c = EX_CRIT.find(x => x.k === k), good = 1 - d["r_" + k];
+      return `<div class="tt-row${c.on ? "" : " off"}"><span>${lab}</span><b>${val}</b><i><em style="width:${(good * 100).toFixed(0)}%"></em></i></div>`; };
+    return `${doe ? `<div class="t-muted">DOE ${doe.sel ? "selected" : "candidate"} federal site: ${doe.name}</div>` : ""}<div class="tt-h"><b>${d.name}${d.ab ? ", " + d.ab : ""}</b><span>${d.rank === 1 ? "Best" : `#${d3.format(",")(d.rank)}`} of ${d3.format(",")(tot)}</span></div>` +
+      row("co", "Hot on fleet's shared heat days", fmtPct(d.co / 100)) + row("ext", "Extreme heat days a year", Math.round(d.ext)) + row("hot", "Days above 35&deg;C a year", Math.round(d.hot)) + row("grid", `AI planned in ${d.gov === "CAISO" ? "the West" : d.region}`, fmt1(this.gw[d.region]) + " GW") +
+      `<div class="tt-gov">${GOV_LONG[d.gov]}</div>`;
   },
+  card() {},
 };
 
 /* ================================================================
@@ -244,70 +234,64 @@ function legendItems(sel, items) {
 const sq = (sel, size) => sel.attr("x", d => d.xy[0] - size / 2).attr("y", d => d.xy[1] - size / 2).attr("width", size).attr("height", size);
 
 /* ================================================================
-   Figure 2. Every planned data center as a row: a step strip of its
-   power coming online, coloured by the siting risk of its county.
+   Figure 2. How far one data center's heat reaches: every county shaded
+   by its chance of extreme heat on the days the selected site is in
+   extreme heat (ten models, 20 summers, climate selected in Figure 1).
    ================================================================ */
-const Build = {
+const RC_T = [10, 20, 30, 40, 50, 60, 70, 80], RC_COL = d3.range(9).map(i => RISK(i / 8));
+const Reach = {
   init() {
-    const months = D.build.months, m0 = months.indexOf("2023-01"), ser = new Map(D.build.sites.map(b => [b.name, b.s]));
-    this.n = 96; this.m0 = m0;
-    this.sites = D.us.map(d => { const s0 = (ser.get(d.name) || []).slice(m0, m0 + 96).map(v => Math.min(d.power, v || 0)), i = s0.findIndex(v => v > 0);
-      const c = Explorer.cs.reduce((a, b) => (Math.hypot(b.c[0] - d.xy[0], b.c[1] - d.xy[1]) < Math.hypot(a.c[0] - d.xy[0], a.c[1] - d.xy[1]) ? b : a));
-      return { ...d, co: ownerOf(d), s: s0, first: i < 0 ? 96 : i, county: c }; });
-    this.group = "region"; this.sort = "size";
-    const ctl = (sel, opts, key) => d3.select(sel).selectAll("button").data(opts).join("button").text(o => o[1]).classed("on", o => o[0] === this[key])
-      .on("click", (e, o) => { this[key] = o[0]; d3.selectAll(`${sel} button`).classed("on", q => q[0] === this[key]); this.layout(true); });
-    ctl("#bd-group", [["region", "Grid region"], ["company", "Company"]], "group");
-    ctl("#bd-sort", [["size", "Size"], ["risk", "Siting risk"], ["first", "First power"]], "sort");
-    legendRamp("#bd-legend", "Siting risk of the county (Figure 1, selected climate)", RISK7, [[0, "Lowest"], [1, "Highest"]]);
-    legendItems("#bd-legend", [{ type: "band", color: "#5f6368", label: "Strip thickness: power online (thicker is larger)" }]);
-    this.played = reduceMotion; this.ready = true; this.rev = reduceMotion ? 1 : 0;
-    responsive("#bd-wrap", w => { this.w = w; this.draw(w); });
-    onVisible("#bd-wrap", () => { this.played = true; const t0 = performance.now(), tm = d3.timer(() => { this.rev = d3.easeCubicInOut(Math.min(1, (performance.now() - t0) / 1800)); d3.select("#bd-reveal").attr("width", (this.tw + 2) * this.rev); if (this.rev >= 1) tm.stop(); }); }, 0.1);
+    this.idx = new Map(D.reach.sites.map((n, i) => [n, i]));
+    this.sites = D.us.filter(d => this.idx.has(d.name)).sort((a, b) => b.power - a.power);
+    this.tour = this.sites.slice(0, 8).map(d => d.name); this.sel = this.tour[0];
+    this.cache = new Map();
+    const W = 975, MH = 610, stage = document.getElementById("rc-stage"), canvas = (this.canvas = document.getElementById("rc-canvas"));
+    this.ctx = canvas.getContext("2d");
+    const resize = () => { const w = stage.clientWidth, dpr = window.devicePixelRatio || 1; canvas.width = Math.round(w * dpr); canvas.height = Math.round(w * MH / W * dpr); canvas.style.height = (w * MH / W) + "px"; this.scale = canvas.width / W; if (this.cur) this.paint(this.cur); };
+    new ResizeObserver(resize).observe(stage); resize();
+    const svg = d3.select("#rc-map").attr("viewBox", `0 0 ${W} ${MH}`), r = d3.scaleSqrt().domain([0, 2800]).range([3, 13]);
+    this.marks = svg.append("g").selectAll("rect").data(this.sites).join("rect").attr("x", d => d.xy[0] - r(d.power) / 2).attr("y", d => d.xy[1] - r(d.power) / 2).attr("width", d => r(d.power)).attr("height", d => r(d.power))
+      .attr("fill", "#fff").attr("stroke", INK).attr("stroke-width", 1.2);
+    this.ring = svg.append("rect").attr("fill", "none").attr("stroke", "#fff").attr("stroke-width", 2.5).style("pointer-events", "none");
+    this.lab = svg.append("text").attr("class", "map-label").attr("text-anchor", "middle").style("pointer-events", "none");
+    this.r = r;
+    const del = d3.Delaunay.from(this.sites, d => d.xy[0], d => d.xy[1]);
+    const near = e => { const [mx, my] = d3.pointer(e), d = this.sites[del.find(mx, my)]; return Math.hypot(d.xy[0] - mx, d.xy[1] - my) < 24 ? d : null; };
+    svg.append("rect").attr("width", W).attr("height", MH).attr("fill", "transparent").style("cursor", "pointer")
+      .on("mousemove", e => { const d = near(e); if (!d) return hideTip(); showTip(e, `<b>${d.name}</b><br><span class="t-muted">${fmtGW(d.power)} planned · ${d.region}</span><br>On its extreme heat days, <b>${fmtPct(D.reach.by[state.climate].reach[this.idx.get(d.name)])}</b> of the rest of the fleet is in extreme heat too<br><span class="t-muted">Click to select</span>`); })
+      .on("mouseleave", hideTip)
+      .on("click", e => { const d = near(e); if (!d) return; this.stop(); this.show(d.name); });
+    legendRamp("#rc-legend", "Chance a county is in extreme heat on the selected site's extreme heat days", RC_COL, [[0, "0%"], [0.5, "50%"], [1, "100%"]]);
+    legendItems("#rc-legend", [{ type: "outline", color: INK, label: "Planned data center, sized by power" }]);
+    this.ready = true; this.show(this.sel, true);
+    onVisible("#rc-stage", () => { if (reduceMotion) return; let i = 0; this.timer = d3.interval(() => { i = (i + 1) % this.tour.length; this.show(this.tour[i]); }, 3200); });
   },
-  risk(d) { return 1 - d.county.better; },
-  draw(w) {
-    const narrow = w < 620, L = narrow ? 118 : 196, Rw = narrow ? 64 : 104, rowH = 14, headH = 28, top = 30;
-    this.L = L; this.tw = w - L - Rw; this.rowH = rowH; this.headH = headH; this.top = top;
-    const svg = d3.select("#build").attr("width", w); svg.selectAll("*").remove();
-    const x = (this.x = d3.scaleLinear().domain([0, this.n]).range([L, L + this.tw]));
-    svg.append("defs").append("clipPath").attr("id", "bd-clip").append("rect").attr("id", "bd-reveal").attr("x", L).attr("y", 0).attr("height", 5000).attr("width", (this.tw + 2) * this.rev);
-    this.grid = svg.append("g");
-    d3.range(0, 9).forEach(i => { this.grid.append("line").attr("class", "bd-yr").attr("x1", x(i * 12)).attr("x2", x(i * 12)).attr("y1", top - 6);
-      if (i < 8) svg.append("text").attr("class", "bd-ax").attr("x", x(i * 12 + 6)).attr("y", top - 12).attr("text-anchor", "middle").text(narrow ? `'${String(2023 + i).slice(2)}` : 2023 + i); });
-    svg.append("text").attr("class", "bd-ax").attr("x", w).attr("y", top - 12).attr("text-anchor", "end").text("Planned");
-    this.heads = svg.append("g");
-    this.rows = svg.append("g").selectAll("g.br").data(this.sites, d => d.name).join("g").attr("class", "br").style("cursor", "pointer");
-    this.rows.append("rect").attr("class", "br-bg").attr("x", 0).attr("width", w).attr("y", -1).attr("height", rowH).attr("fill", "transparent");
-    this.rows.append("text").attr("class", "br-n").attr("x", L - 10).attr("y", rowH / 2 - 0.5).attr("dy", "0.35em").attr("text-anchor", "end").text(d => (narrow ? d.name.replace(/^(OpenAI |Microsoft |Meta |Google |Amazon |CoreWeave )/, "") : d.name)).each(function () { const t = this; while (t.getComputedTextLength() > L - 16 && t.textContent.length > 4) t.textContent = t.textContent.slice(0, -2) + "…"; });
-    const mid = rowH / 2 - 0.5, hgt = d3.scaleSqrt().domain([0, 2800]).range([0, rowH - 1.5]);
-    this.rows.append("line").attr("x1", L).attr("x2", L + this.tw).attr("y1", mid).attr("y2", mid).attr("stroke", "#e8eaed");
-    this.areas = this.rows.append("path").attr("clip-path", "url(#bd-clip)").attr("d", d => d3.area().curve(d3.curveMonotoneX).x((v, i) => x(i)).y0(v => mid + hgt(v) / 2).y1(v => mid - hgt(v) / 2)([...d.s, d.s[this.n - 1]]));
-    this.rows.append("text").attr("class", "br-v").attr("x", w).attr("y", rowH / 2 - 0.5).attr("dy", "0.35em").attr("text-anchor", "end").text(d => fmtGW(d.power));
-    this.rows.on("mousemove", (e, d) => { this.rows.select(".br-bg").attr("fill", o => (o === d ? "#f1f3f4" : "transparent"));
-      const fp = d.first < 96 ? d3.timeFormat("%B %Y")(new Date(2023, d.first, 1)) : "after 2030";
-      showTip(e, `<b>${d.name}</b><br><span class="t-muted">${d.co === "Other" ? d.owner || "Other" : d.co} · ${d.region}</span><br>${fmtGW(d.power)} planned, first power ${fp}<br>${d.county.name}${d.county.ab ? ", " + d.county.ab : ""}: siting risk higher than ${fmtPct(this.risk(d))} of counties<br><span class="t-muted">Click to score this county in Figure 1</span>`); })
-      .on("mouseleave", () => { this.rows.select(".br-bg").attr("fill", "transparent"); hideTip(); })
-      .on("click", (e, d) => { hideTip(); Explorer.pin = d.county; Explorer.pinG.attr("d", Explorer.path(d.county.f)); Explorer.card(d.county); document.getElementById("explore").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" }); });
-    this.recolor(); this.layout(false);
+  stop() { if (this.timer) this.timer.stop(); this.timer = null; },
+  vals(name) {
+    const key = state.climate + "|" + name;
+    if (!this.cache.has(key)) { const f = decodeU8(D.reach.by[state.climate].fields[this.idx.get(name)]); this.cache.set(key, Float32Array.from(Explorer.cs, c => sampleGrid(f, c.lon, c.lat))); }
+    return this.cache.get(key);
   },
-  recolor() { if (this.areas) this.areas.transition().duration(DUR / 2).attr("fill", d => RISK(this.risk(d))); },
-  layout(animate) {
-    const key = d => (this.group === "region" ? d.region : d.co);
-    const sorter = { size: (a, b) => b.power - a.power, risk: (a, b) => this.risk(b) - this.risk(a), first: (a, b) => a.first - b.first || b.power - a.power }[this.sort];
-    const groups = d3.groups(this.sites, key).map(([k, ds]) => ({ k, ds: ds.sort(sorter), gw: d3.sum(ds, d => d.power) })).sort((a, b) => (a.k === "Other") - (b.k === "Other") || b.gw - a.gw);
-    let y = this.top + 4;
-    groups.forEach(g => { g.y = y; y += this.headH; g.ds.forEach(d => { d.y = y; y += this.rowH; }); y += 8; });
-    d3.select("#build").attr("height", y + 4);
-    this.grid.selectAll("line").attr("y2", y);
-    const t = sel => (animate && !reduceMotion ? sel.transition().duration(750).ease(ease) : sel);
-    t(this.rows).attr("transform", d => `translate(0,${d.y})`);
-    const H = this.heads.selectAll("g.bh").data(groups, g => g.k).join(e => { const q = e.append("g").attr("class", "bh"); q.append("text").attr("class", "bh-k"); q.append("text").attr("class", "bh-v"); q.append("line"); return q; });
-    t(H).attr("transform", g => `translate(0,${g.y})`);
-    H.select(".bh-k").attr("y", 17).text(g => g.k);
-    H.select(".bh-v").attr("x", this.w).attr("y", 17).attr("text-anchor", "end").text(g => `${fmtGW(g.gw)} · ${g.ds.length} site${g.ds.length > 1 ? "s" : ""}`);
-    H.select("line").attr("x1", 0).attr("x2", this.w).attr("y1", 22).attr("y2", 22).attr("stroke", "#9aa0a6");
+  col(v) { let i = 0; while (i < RC_T.length && v >= RC_T[i]) i++; return RC_COL[i]; },
+  paint(a) {
+    const { ctx, scale } = this;
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, this.canvas.width, this.canvas.height); ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    Explorer.cs.forEach((c, j) => { ctx.fillStyle = this.col(a[j]); ctx.fill(c.p2); });
+    ctx.strokeStyle = "rgba(255,255,255,.95)"; ctx.lineWidth = 1.1; ctx.stroke(G.stateP);
   },
+  show(name, instant) {
+    this.sel = name; const s = this.sites.find(d => d.name === name), to = this.vals(name), from = this.cur || to;
+    if (this.tm) this.tm.stop();
+    if (instant || reduceMotion || from === to) { this.cur = to; this.paint(to); }
+    else this.tm = d3.timer(el => { const t = ease(Math.min(1, el / 700)), a = from.map((v, j) => v + (to[j] - v) * t); this.cur = a; this.paint(a); if (t >= 1) { this.cur = to; this.tm.stop(); } });
+    const z = this.r(s.power) + 8;
+    this.marks.attr("fill", d => (d.name === name ? INK : "#fff"));
+    this.ring.transition().duration(instant ? 0 : DUR).attr("x", s.xy[0] - z / 2).attr("y", s.xy[1] - z / 2).attr("width", z).attr("height", z);
+    this.lab.text(name).transition().duration(instant ? 0 : DUR).attr("x", s.xy[0]).attr("y", s.xy[1] - z / 2 - 8);
+    d3.select("#rc-name").text(name);
+    d3.select("#rc-val").html(`On its extreme heat days, <b>${fmtPct(D.reach.by[state.climate].reach[this.idx.get(name)])}</b> of the rest of the fleet is in extreme heat too`);
+  },
+  recolor() { this.cur = null; this.show(this.sel, true); },
 };
 
 /* ================================================================
@@ -582,15 +566,17 @@ function writeProse() {
   const area = d => (["Washington", "Oregon", "Idaho", "Montana"].includes(d.st) ? "the Pacific Northwest and northern Rockies" : NEW_ENGLAND.includes(d.st) || d.st === "New York" ? "northern New England" : ["North Dakota", "South Dakota", "Minnesota", "Nebraska"].includes(d.st) ? "the northern Plains" : ["North Carolina", "Georgia", "South Carolina", "Virginia"].includes(d.st) ? "the Carolina and Georgia Piedmont" : d.st === "California" ? "coastal California" : "");
   const areas = [...new Set(pk.map(area).filter(Boolean))], list = a => (a.length > 1 ? a.slice(0, -1).join(", ") + " and " + a[a.length - 1] : a[0] || "");
   d3.select("#ex-take").html(`We start with the answer. Figure 1 scores all ${d3.format(",")(ex.cs.length)} counties in the lower 48 as places for a new AI data center, using ${on.length === 4 ? "four criteria" : list(on)} described below it. In ${when}, the lowest-risk areas are ${list(areas.slice(0, 4)) || "spread across the country"}, and the top-ranked county is <b>${pk[0] ? nm(pk[0]) : ""}</b>. Hover a county for its scorecard, click to pin it, and change the climate or the criteria to see how the ranking moves. The rest of this post explains why these places come out on top.`);
-  d3.select("#ex-criteria-text").html(`<b>Shared heat with the fleet</b> is how often a county is in extreme heat on the fleet's shared heat days, defined in Figure 3. Siting tools in use today weigh power, water, land and cooling cost${cite(12, 13)}, but not this. <b>Local extreme heat</b> counts days above the county's own design-day temperature, the 1-in-100-day heat that cooling systems are sized for${cite(4)}. <b>Cooling burden</b> counts days above 35&deg;C, which drive cooling energy and water use${cite(14, 15)}. <b>Grid concentration</b> favors grid regions that host less of the planned fleet. Each criterion is ranked across counties and the ranks are averaged into one siting risk.`);
+  d3.select("#ex-criteria-text").html(`Each county's four criteria are ranked across counties and averaged. Shared heat with the fleet, defined in Figure 3, is the criterion today's siting tools leave out${cite(12, 13)}; the others are days above the county's own design day${cite(4)}, days above 35&deg;C, which drive cooling energy and water use${cite(14, 15)}, and how much AI power its grid region already hosts.`);
   const doe = DOE16.filter(s => s.sel).map(s => ({ ...s, b: s.county ? s.county.better : 0 })).sort((p, q) => q.b - p.b), all = DOE16.map(s => ({ ...s, b: s.county ? s.county.better : 0 })).sort((p, q) => q.b - p.b);
   d3.select("#doe-take").html(`The same scores apply to federal land. Of the four sites the Department of Energy selected for AI data centers${cite(8)}, ${doe[0].name} ranks best, ahead of ${fmtPct(doe[0].b)} of counties, and ${doe[3].name} ranks lowest, ahead of ${fmtPct(doe[3].b)}. Among all 16 candidates${cite(9)}, ${all[0].name} ranks highest.`);
   const reg = d3.rollup(D.us, a => d3.sum(a, d => d.power), d => d.region), topReg = [...reg.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3);
   const own = d3.rollup(D.us, a => d3.sum(a, d => d.power), d => ownerOf(d)), top5 = [...own.entries()].filter(e => e[0] !== "Other").sort((a, b) => b[1] - a[1]).slice(0, 5);
-  const inTop = d3.sum(D.us.filter(d => { const c = ex.cs.reduce((a, b) => (Math.hypot(b.c[0] - d.xy[0], b.c[1] - d.xy[1]) < Math.hypot(a.c[0] - d.xy[0], a.c[1] - d.xy[1]) ? b : a)); return c.better >= 0.85; }), d => d.power);
-  d3.select("#build-take").html(`Those places are not where the fleet is going. Planned AI capacity in the United States grows from 0.1 GW in early 2023 to <b>${fmtGW(D.usGW)}</b> by 2030, according to construction timelines compiled by Epoch AI${cite(1)}. Three grid regions, ${topReg.map(e => e[0]).join(", ").replace(/, ([^,]*)$/, " and $1")}, will host ${fmtPct(d3.sum(topReg, e => e[1]) / D.usGW)} of it, and five companies (${top5.map(e => e[0]).join(", ")}) plan ${fmtPct(d3.sum(top5, e => e[1]) / D.usGW)}. Only ${fmtPct(inTop / D.usGW)} of planned power sits in counties ranked in the best 15% in Figure 1. Figure 2 shows each site's build-out, coloured by the siting risk of its county; regroup or re-sort the rows, or click one to score its county.`);
-  const rch = D.reach.by["ssp245|2041-2060"].reach, rch0 = D.reach.by[HIST].reach, R = D.replay, pkF = R.frames[d3.maxIndex(R.frames, f => f.share)];
-  d3.select("#replay-take").html(`Concentration matters because heat waves are large. A data center is in <b>extreme heat</b> on a day hotter than its <b>design day</b>, the temperature exceeded on only 1% of days in 1995&ndash;2014; each climate model is compared with its own past, so model biases cancel. In the 2050s under moderate emissions, the median data center shares its extreme heat days with ${fmtPct(d3.median(rch))} of the rest of the fleet, up from ${fmtPct(d3.median(rch0))} in 1995&ndash;2014. When at least a quarter of planned AI power is in extreme heat together, we call it a <b>shared heat day</b>. Figure 3 replays the longest run of them in our ensemble for that climate: <b>${R.run_days} consecutive days</b> in one model's simulated summer (${R.model}), one plausible summer rather than a forecast. On its worst day, ${d3.timeFormat("%B %-d")(d3.timeParse("%Y-%m-%d")(pkF.date))}, <b>${fmtPct(pkF.share)}</b> of planned AI power is in extreme heat at once, on the days when homes and hospitals on the same grids need the most power${cite(5)}.`);
+  const near = d => ex.cs.reduce((a, b) => (Math.hypot(b.c[0] - d.xy[0], b.c[1] - d.xy[1]) < Math.hypot(a.c[0] - d.xy[0], a.c[1] - d.xy[1]) ? b : a));
+  const best = d3.sum(D.us.filter(d => near(d).better >= 0.85), d => d.power) / D.usGW, worst = d3.sum(D.us.filter(d => near(d).better < 0.25), d => d.power) / D.usGW;
+  const rch = D.reach.by[k].reach, rch0 = D.reach.by[HIST].reach;
+  d3.select("#build-take").html(`Those places are not where the fleet is going. Planned AI capacity in the United States reaches <b>${fmtGW(D.usGW)}</b> by 2030, according to construction timelines compiled by Epoch AI${cite(1)}; ${topReg.map(e => e[0]).join(", ").replace(/, ([^,]*)$/, " and $1")} will host ${fmtPct(d3.sum(topReg, e => e[1]) / D.usGW)} of it. Only <b>${fmtPct(best)}</b> sits in the counties Figure 1 ranks in the best 15%, and <b>${fmtPct(worst)}</b> in the worst quarter. That matters because extreme heat is not local. A data center is in <b>extreme heat</b> on a day hotter than its <b>design day</b>, the temperature exceeded on only 1% of days in 1995&ndash;2014; each climate model is compared with its own past, so model biases cancel. Figure 2 shows where else it is hot on the days one data center is. In ${when}, the median site shares its extreme heat days with <b>${fmtPct(d3.median(rch))}</b> of the rest of the fleet${k === HIST ? "" : `, against ${fmtPct(d3.median(rch0))} in 1995&ndash;2014`}.`);
+  const R = D.replay, pkF = R.frames[d3.maxIndex(R.frames, f => f.share)];
+  d3.select("#replay-take").html(`Put those footprints together and one summer can hold most of the fleet in extreme heat at once. When at least a quarter of planned AI power is in extreme heat together, we call it a <b>shared heat day</b>. Figure 3 replays the longest run of them in our ensemble for that climate: <b>${R.run_days} consecutive days</b> in one model's simulated summer (${R.model}), one plausible summer rather than a forecast. On its worst day, ${d3.timeFormat("%B %-d")(d3.timeParse("%Y-%m-%d")(pkF.date))}, <b>${fmtPct(pkF.share)}</b> of planned AI power is in extreme heat at once, on the days when homes and hospitals on the same grids need the most power${cite(5)}.`);
   const at = D.gwl.at, past = d3.mean(D.gwl.pts.filter(p => p.k === HIST), p => p.days);
   const P = Warming.periods, band = (k, i) => P.find(p => p.k === k).segs[i].v, gmax = P[P.length - 1];
   d3.select("#warm-take").html(`Summers like that are rare today and become ordinary as the planet warms. Figure 4 sorts all 1,000 simulated summers in our ensemble, ten climate models with 20 summers each in five periods, by how many shared heat days each one holds. In 1995&ndash;2014, <b>${fmtPct(band(HIST, 0))}</b> of summers have fewer than five. By the 2050s under moderate emissions, at about 2&deg;C of global warming, ${fmtPct(1 - band("ssp245|2041-2060", 0) - band("ssp245|2041-2060", 1))} have 15 or more, and in the 2090s under high emissions, at ${fmt1(gmax.g)}&deg;C, <b>${fmtPct(band("ssp585|2081-2100", 4))}</b> have 60 or more. Across models the relationship with warming is close to a single curve: about ${Math.round(D.gwl.at["1.5"])} shared heat days at 1.5&deg;C, ${Math.round(D.gwl.at["2.0"])} at 2&deg;C and ${Math.round(D.gwl.at["3.0"])} at 3&deg;C${cite(23)}.`);

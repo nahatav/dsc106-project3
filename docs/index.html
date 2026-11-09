@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap">
-<link rel="stylesheet" href="style.css?v=103">
+<link rel="stylesheet" href="style.css?v=108">
 </head>
 <body>
 
@@ -41,22 +41,20 @@
     </div>
     <div class="fig-stage"><svg id="ex-map" role="img" aria-label="US counties shaded by how good a place each is for a new AI data center, with the ten best areas outlined"></svg></div>
     <div class="legend" id="ex-legend"></div>
-    <div class="ex-card" id="ex-card" aria-live="polite"></div>
-    <ol class="co-list" id="ex-list"></ol>
-    <figcaption>Every county in the lower 48, shaded by its siting risk: the average of its ranks on the selected criteria, from lowest (pale) to highest (dark). Outlined and numbered: the ten lowest-risk areas, at least 500 km apart. Squares mark the Department of Energy's 16 candidate federal sites; dashed lines are grid market boundaries, approximated by states.</figcaption>
+    <figcaption>Every county in the lower 48, shaded by its siting risk: the average of its ranks on the selected criteria, from lowest (pale) to highest (dark). Numbered outlines mark the ten lowest-risk areas, at least 500 km apart. Squares mark the Department of Energy's 16 candidate federal sites; dashed lines are grid market boundaries, approximated by states. Hover any county for its scorecard.</figcaption>
   </figure>
   <p id="ex-criteria-text">&nbsp;</p>
   <p id="doe-take">&nbsp;</p>
 </section>
 
 <section id="fleet">
-  <h2>Where the fleet is being built</h2>
+  <h2>How far one site's heat reaches</h2>
   <p id="build-take">&nbsp;</p>
   <figure class="fig fig-full">
-    <div class="fig-toolbar"><span class="ctl-lab">Group</span><div class="seg" id="bd-group" role="group" aria-label="Group by"></div><span class="ctl-lab">Sort</span><div class="seg" id="bd-sort" role="group" aria-label="Sort by"></div></div>
-    <div class="legend legend-top" id="bd-legend"></div>
-    <div class="chart" id="bd-wrap"><svg id="build" role="img" aria-label="One row per planned US AI data center: power coming online from 2023 to 2030, coloured by the siting risk of its county"></svg></div>
-    <figcaption>Each row is one of the 77 planned US AI data centers. The strip thickens as its power comes online from 2023 to 2030, so the largest campuses are the widest bands, according to construction timelines compiled by Epoch AI, and is coloured by the siting risk of its county in Figure 1 for the selected climate. Hover a row for details; click it to score its county.</figcaption>
+    <div class="fig-toolbar rc-bar"><span class="rc-name" id="rc-name"></span><span class="rc-val" id="rc-val"></span></div>
+    <div class="fig-stage map-stage rp-stage" id="rc-stage"><canvas id="rc-canvas" aria-hidden="true"></canvas><svg id="rc-map" role="img" aria-label="County map of the chance of extreme heat on the days the selected data center is in extreme heat"></svg></div>
+    <div class="legend" id="rc-legend"></div>
+    <figcaption>Each county's chance of extreme heat on the days the selected data center is in extreme heat, pooled over ten CMIP6 models and 20 simulated summers, for the climate selected in Figure 1. Squares are the 77 planned data centers, sized by planned power. The map tours the largest campuses; click any data center to select it.</figcaption>
   </figure>
 </section>
 
@@ -187,6 +185,6 @@
 <div id="tip" class="tip" role="tooltip"></div>
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
-<script src="main.js?v=103"></script>
+<script src="main.js?v=108"></script>
 </body>
 </html>
