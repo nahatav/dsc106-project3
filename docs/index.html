@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Shared Heat Risk of AI Data Centers</title>
-<meta name="description" content="A fleet-level analysis of heat risk for America's planned AI data centers, using ten CMIP6 climate models.">
-<meta property="og:title" content="Measuring the shared heat risk of America's AI data centers">
+<title>Siting AI Data Centers</title>
+<meta name="description" content="A county-by-county siting explorer for US AI data centers built on ten CMIP6 climate models: where a new data center would add the least shared heat risk to the fleet and the grids it depends on.">
+<meta property="og:title" content="Choosing where to build AI data centers as heat waves grow">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%2714%27 fill=%27%231c1a17%27/%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%276%27 fill=%27%23f2844f%27/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&family=Google+Sans+Code&display=swap">
-<link rel="stylesheet" href="style.css?v=25">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap">
+<link rel="stylesheet" href="style.css?v=103">
 </head>
 <body>
 
@@ -19,126 +19,135 @@
 <div class="wrap">
 <header class="hero">
   <div class="hero-text">
-    <p class="crumbs"><a href="https://dsc106.com/projects/project3/">Project 3</a><span>&rsaquo;</span>CMIP6</p>
-    <h1>Measuring the shared heat risk of America's AI data centers</h1>
-    <p class="meta">November 2026 &middot; Valmik Nahata, Varun Sinha, Rishab Kolan, Rishil Chintalapati · UC San Diego</p>
+    <p class="crumbs"><a href="https://dsc106.com/projects/project3/">Project 3</a><span class="chev">&rsaquo;</span><span>CMIP6</span></p>
+    <h1>Choosing where to build AI data centers as heat waves grow</h1>
+    <p class="meta">November 2026 &middot;<br>Valmik Nahata, Varun Sinha, Rishab Kolan and Rishil Chintalapati, UC San Diego</p>
   </div>
+  <div class="hero-img"><svg id="hero-map" role="img" aria-label="Miniature of the siting explorer: US counties shaded by how good a place each is for a new AI data center"></svg></div>
 </header>
 
 <div class="layout">
 <main>
 
-<p class="lede">We present a fleet-level analysis of heat risk for America's planned AI data centers. Combining ten CMIP6 climate models with Epoch AI's map of 77 planned campuses, we find that one heat wave can reach a large share of the fleet at once, that such shared heat days become common as the planet warms, and that where new capacity is built can reduce the risk.</p>
+<p class="lede">AI data centers are approved one site at a time, but a heat wave can reach many of them at once, on the same days that households lean hardest on the grid. Using ten CMIP6 climate models and Epoch AI's records of 77 planned US campuses, we score every county in the lower 48 as a place to build and show where the next gigawatt would add the least shared risk to the fleet and to the people who rely on the same power.</p>
 
-<p>AI data centers are approved one at a time: through federal permitting<a class="cite" href="#r7">7</a>, on federal land<a class="cite" href="#r8">8</a> and in grid connection rules<a class="cite" href="#r9">9</a><span class="cite-sep">,</span><a class="cite" href="#r10">10</a>. Climate risk studies also assess sites one at a time<a class="cite" href="#r15">15</a><span class="cite-sep">,</span><a class="cite" href="#r16">16</a>. Heat waves, however, span hundreds of kilometers and can stress several power grids at once<a class="cite" href="#r17">17</a>. Here we describe how this shared exposure grows as the planet warms.</p>
+<section id="explore">
+  <h2>Scoring every county</h2>
+  <p id="ex-take">&nbsp;</p>
+  <figure class="fig fig-full">
+    <div class="ex-controls">
+      <div class="ex-ctl"><span class="ctl-lab">Climate</span><div class="seg" id="ex-climate" role="group" aria-label="Climate"><button data-k="historical|1995-2014">1995&ndash;2014</button><button data-k="ssp245|2041-2060" class="on">2050s, moderate</button><button data-k="ssp585|2041-2060">2050s, high</button><button data-k="ssp245|2081-2100">2090s, moderate</button><button data-k="ssp585|2081-2100">2090s, high</button></div></div>
+      <div class="ex-ctl"><span class="ctl-lab">Criteria</span><div class="crit-row" id="ex-criteria" role="group" aria-label="Siting criteria"></div></div>
+    </div>
+    <div class="fig-stage"><svg id="ex-map" role="img" aria-label="US counties shaded by how good a place each is for a new AI data center, with the ten best areas outlined"></svg></div>
+    <div class="legend" id="ex-legend"></div>
+    <div class="ex-card" id="ex-card" aria-live="polite"></div>
+    <ol class="co-list" id="ex-list"></ol>
+    <figcaption>Every county in the lower 48, shaded by its siting risk: the average of its ranks on the selected criteria, from lowest (pale) to highest (dark). Outlined and numbered: the ten lowest-risk areas, at least 500 km apart. Squares mark the Department of Energy's 16 candidate federal sites; dashed lines are grid market boundaries, approximated by states.</figcaption>
+  </figure>
+  <p id="ex-criteria-text">&nbsp;</p>
+  <p id="doe-take">&nbsp;</p>
+</section>
 
 <section id="fleet">
-  <h2>Who is building, and where</h2>
-  <p id="fleet-take">&nbsp;</p>
-  <figure class="fig">
-    <div class="fig-toolbar"><label class="fm-select"><span>Company</span><select id="fleet-co"></select></label><span class="fm-hint">Hover a site · click a region to zoom</span></div>
-    <div class="fig-stage"><svg id="fleetmap" role="img" aria-label="Map of the 77 planned US AI data centers as dots of 100 MW each, filling in as their power comes online from 2023 to 2030"></svg></div>
-    <figcaption><b>Figure 1.</b> Each dot is 100 MW of planned power at one of the 77 US AI data centers, filled in when that power comes online, from construction timelines compiled by Epoch AI. Drag the chart or press play. Click a site to see its heat reach in Figure 2. Grid regions are approximated by states.</figcaption>
+  <h2>Where the fleet is being built</h2>
+  <p id="build-take">&nbsp;</p>
+  <figure class="fig fig-full">
+    <div class="fig-toolbar"><span class="ctl-lab">Group</span><div class="seg" id="bd-group" role="group" aria-label="Group by"></div><span class="ctl-lab">Sort</span><div class="seg" id="bd-sort" role="group" aria-label="Sort by"></div></div>
+    <div class="legend legend-top" id="bd-legend"></div>
+    <div class="chart" id="bd-wrap"><svg id="build" role="img" aria-label="One row per planned US AI data center: power coming online from 2023 to 2030, coloured by the siting risk of its county"></svg></div>
+    <figcaption>Each row is one of the 77 planned US AI data centers. The strip thickens as its power comes online from 2023 to 2030, so the largest campuses are the widest bands, according to construction timelines compiled by Epoch AI, and is coloured by the siting risk of its county in Figure 1 for the selected climate. Hover a row for details; click it to score its county.</figcaption>
   </figure>
 </section>
 
-<div class="climate-bar" id="climate-bar" role="group" aria-label="Climate shown in Figures 2 to 6">
-  <span class="cb-label">Climate</span>
-  <div class="seg" id="seg-climate">
-    <button data-k="historical|1995-2014">1995&ndash;2014</button>
-    <button data-k="ssp245|2041-2060" class="on">2050s, moderate</button>
-    <button data-k="ssp585|2041-2060">2050s, high</button>
-    <button data-k="ssp245|2081-2100">2090s, moderate</button>
-    <button data-k="ssp585|2081-2100">2090s, high</button>
-  </div>
-</div>
-
-<section id="reach">
+<section id="replay">
   <h2>One heat wave, many data centers</h2>
-  <p id="reach-take">&nbsp;</p>
-  <figure class="fig">
-    <div class="fig-stage map-stage" id="rc-stage">
-      <canvas id="rc-canvas" aria-hidden="true"></canvas>
-      <svg id="rc-map" role="img" aria-label="Chance of extreme heat elsewhere when the selected data center is in extreme heat"></svg>
-    </div>
-    <div class="legend-row" id="rc-legend"></div>
-    <figcaption><b>Figure 2.</b> Chance of extreme heat at each location on the days the selected data center is in extreme heat, pooled over ten models and 20 years. The map tours the largest campuses; click any site to choose one.</figcaption>
+  <p id="replay-take">&nbsp;</p>
+  <figure class="fig fig-full">
+    <div class="fig-toolbar rp-bar"><button class="play" id="rp-play" aria-label="Play"></button><span class="rp-date" id="rp-date"></span><span class="rp-share" id="rp-share"></span></div>
+    <div class="fig-stage rp-stage" id="rp-stage"><canvas id="rp-canvas" aria-hidden="true"></canvas><svg id="rp-map" role="img" aria-label="County map of a 45-day simulated heat wave in the 2050s, with data centers marked when in extreme heat"></svg></div>
+    <div class="legend" id="rp-legend"></div>
+    <div class="fig-stage"><svg id="rp-grid" role="img" aria-label="Every planned data center by day, marked when in extreme heat, with the daily share of the fleet above"></svg></div>
+    <figcaption>One simulated summer in the 2050s under moderate emissions (ACCESS-CM2). The map shows how far each county is above its own design day; planned data centers are filled when in extreme heat. Below, each row is a data center, grouped by grid region from west to east, and each column a day; the bars give the share of planned AI power in extreme heat, and days above the dashed line are shared heat days. Press play, or drag across the grid.</figcaption>
   </figure>
 </section>
 
-<section id="season">
-  <h2>Every simulated summer</h2>
-  <p id="season-take">&nbsp;</p>
-  <figure class="fig">
-    <div class="view-chips seg" id="mosaic-sort"><button data-v="model" class="on">Grouped by model</button><button data-v="sorted">Sorted by shared heat days</button></div>
-    <div class="fig-stage"><canvas id="mosaic" aria-label="Mosaic of 200 simulated summers, with shared heat days marked"></canvas></div>
-    <figcaption><b>Figure 3.</b> Each row is one simulated summer (10 models &times; 20 years) and each column one day from May to September. Red marks a shared heat day, when at least a quarter of planned US AI power is in extreme heat at once. Left: 1995&ndash;2014. Right: the climate selected above. Hover a row.</figcaption>
+<section id="warming">
+  <h2>Shared heat as the planet warms</h2>
+  <p id="warm-take">&nbsp;</p>
+  <figure class="fig fig-full">
+    <div class="legend legend-top" id="wm-legend"></div>
+    <div class="chart" id="wm-wrap"><svg id="warm" role="img" aria-label="Share of simulated summers by number of shared heat days, one bar per period ordered by global warming"></svg></div>
+    <figcaption>The share of simulated summers (ten CMIP6 models, 20 summers each per period) in five bands of shared heat days, the days when at least a quarter of planned US AI power is in extreme heat at once. Periods are ordered by the global warming the ensemble simulates in them; the median summer is at right. Hover a segment for its count.</figcaption>
   </figure>
 </section>
 
-<section id="grids">
-  <h2>Heat spreads across power grids</h2>
-  <p id="grids-take">&nbsp;</p>
-  <figure class="fig">
-    <div class="fig-stage"><svg id="stream" role="img" aria-label="Streamgraph of region-wide heat by grid region through the warm season"></svg></div>
-    <figcaption><b>Figure 4.</b> Planned AI power in grid regions under region-wide heat (at least half the region above its design day), as an expected value for each day of the warm season, stacked by region. Dashed line: the 1995&ndash;2014 total. Hover for each region.</figcaption>
+<section id="duration">
+  <h2>Longer events across more regions</h2>
+  <p id="dur-take">&nbsp;</p>
+  <figure class="fig fig-full">
+    <div class="fig-toolbar"><span class="ctl-lab">Period</span><div class="seg" id="du-periods" role="group" aria-label="Period"></div></div>
+    <div class="legend legend-top" id="du-legend"></div>
+    <div class="chart" id="du-wrap"><svg id="dur-chart" role="img" aria-label="Calendar of region-wide heat by grid region and date, with the expected number of regions under it at once"></svg></div>
+    <figcaption>Top: the expected number of grid regions under region-wide heat (at least half the region above its design day) on each date. Below: the chance of region-wide heat in each grid region on each date from May to September, with the average length of an event at right, for the selected period; the figure steps through the periods on its own. Hover any date to compare regions. Grid regions are approximated by states.</figcaption>
   </figure>
 </section>
 
-<section id="siting">
-  <h2>Where the next gigawatt should go</h2>
-  <p id="co-take">&nbsp;</p>
-  <figure class="fig">
-    <div class="fig-stage map-stage" id="co-stage">
-      <canvas id="co-canvas" aria-hidden="true"></canvas>
-      <svg id="co-map" role="img" aria-label="Chance of extreme heat on the fleet's shared heat days, with DOE federal AI sites"></svg>
-    </div>
-    <div class="legend-row" id="co-legend"></div>
-    <figcaption><b>Figure 5.</b> Chance of extreme heat on the fleet's shared heat days. Pale places are usually cool when the fleet is hot. Diamonds: DOE's federal AI sites. Hover anywhere.</figcaption>
+<section id="gov">
+  <h2>Who decides</h2>
+  <p id="gov-take">&nbsp;</p>
+  <figure class="fig fig-full">
+    <div class="chart" id="gov-wrap"><svg id="gov-chart" role="img" aria-label="Planned AI power by grid-connection regime, and a matrix of eight governance measures since 2025 against what each addresses"></svg></div>
+    <div class="legend" id="gov-legend"></div>
+    <figcaption>Top: planned AI power by who sets its grid-connection terms; click a segment to show the measures that apply. Below: eight measures adopted since January 2025 and what each addresses, from our reading of the cited sources. Hover a cell for details.</figcaption>
   </figure>
 </section>
 
-<section id="world">
-  <h2>The same physics worldwide</h2>
-  <p id="world-take">&nbsp;</p>
-  <figure class="fig">
-    <div class="fig-stage globe-stage" id="globe-stage"><canvas id="globe" aria-label="Rotating globe of extreme heat days per year with all 96 AI data centers"></canvas></div>
-    <div class="legend-row" id="globe-legend"></div>
-    <figcaption><b>Figure 6.</b> Extreme heat days per year over land, ten-model median on a 2&deg; grid, with all 96 sites in Epoch's data. Drag to rotate.</figcaption>
-  </figure>
-</section>
-
-<section id="conclusion">
-  <h2>Conclusion</h2>
-  <p>Heat risk to AI infrastructure is shared: one heat wave reaches many campuses and several power grids at once, and these events become more frequent and longer as the planet warms. We suggest that permitting, federal site selection and interconnection studies assess the fleet jointly<a class="cite" href="#r7">7</a><span class="cite-sep">,</span><a class="cite" href="#r8">8</a><span class="cite-sep">,</span><a class="cite" href="#r9">9</a>, that curtailment and backup rules plan for multi-day, multi-region events<a class="cite" href="#r6">6</a><span class="cite-sep">,</span><a class="cite" href="#r12">12</a>, and that new capacity favor places whose heat rarely coincides with the rest of the fleet.</p>
+<section id="recs">
+  <h2>Recommendations</h2>
+  <p>Figures 1 to 6 point to three changes in how AI infrastructure is reviewed. Each treats the fleet, rather than the single site, as the unit of risk.</p>
+  <ol class="recs">
+    <li id="rec-1">&nbsp;</li>
+    <li id="rec-2">&nbsp;</li>
+    <li id="rec-3">&nbsp;</li>
+  </ol>
+  <p>Siting for shared heat is not only an engineering choice. When AI load clusters where heat strikes together, the cost of a bad summer falls on everyone connected to those grids, through emergency curtailment, higher prices or outages<a class="cite" href="#r18">18</a><span class="cite-sep">,</span><a class="cite" href="#r19">19</a>. Spreading new capacity toward places that are rarely hot when the rest of the fleet is protects those communities as well as the companies.</p>
 </section>
 
 <section id="method">
   <h2>Data and method</h2>
-  <p>Daily maximum temperature from ten CMIP6 models<a class="cite" href="#r2">2</a> (<span id="model-list"></span>; first member each) via the public cloud archive<a class="cite" href="#r3">3</a>, for 1995&ndash;2014 and 2041&ndash;2060 and 2081&ndash;2100 under SSP2-4.5 (moderate) and SSP5-8.5 (high). Extreme heat is relative to each model's own 1995&ndash;2014 99th percentile at each grid cell, so model bias cancels. A shared heat day has at least a quarter of planned power in extreme heat. Grid regions are approximated by states. Sites are Epoch AI's frontier data centers<a class="cite" href="#r1">1</a>, geocoded and weighted by planned power. Results hold for 98th to 99.5th percentile thresholds and 25% to 50% fleet shares. Heat stands in for grid stress; it is not a record of emergencies. Code and data: <a href="https://github.com/" class="todo">repository link</a>.</p>
+  <p>Daily maximum temperature from ten CMIP6 models<a class="cite" href="#r2">2</a> (<span id="model-list"></span>; first member each) via the public cloud archive<a class="cite" href="#r3">3</a>, for 1995&ndash;2014 and for 2041&ndash;2060 and 2081&ndash;2100 under SSP2-4.5 (moderate) and SSP5-8.5 (high emissions). A place is in extreme heat on a day above its own 1995&ndash;2014 99th percentile in that model (its design day), so model biases cancel. A shared heat day has at least a quarter of planned US AI power in extreme heat. Sites are Epoch AI's frontier data centers<a class="cite" href="#r1">1</a>, geocoded and weighted by planned power. Global warming levels add 0.85&deg;C to each model's warming since 1995&ndash;2014<a class="cite" href="#r23">23</a>. Siting criteria are computed on a common 1&deg; grid, take the ten-model median and are sampled at county centroids, so county values inherit the roughly 100 km resolution of the climate models. Each criterion is ranked across about 3,100 counties and the ranks are averaged; the ten best areas are chosen greedily at least 500 km apart. Grid regions and their regulators are approximated by states, and DOE site coordinates beyond the four selected sites are approximate. Figure 6 codes each measure from the cited legal and news summaries; it reflects what each measure addresses as described there, not a full legal analysis. Results hold for 98th to 99.5th percentile thresholds and 25% to 50% fleet shares. Heat stands in for grid stress; it is not a record of emergencies.</p>
   <h3>References</h3>
   <ol class="refs">
     <li id="r1">Epoch AI (2026). <a href="https://epoch.ai/data/ai-data-centers">AI data centers (Frontier Data Centers Hub)</a>. CC BY 4.0.</li>
     <li id="r2">Eyring, V. et al. (2016). <a href="https://doi.org/10.5194/gmd-9-1937-2016">Overview of CMIP6</a>. <i>Geoscientific Model Development</i> 9, 1937&ndash;1958.</li>
     <li id="r3">Pangeo / Google Cloud. <a href="https://pangeo-data.github.io/pangeo-cmip6-cloud/">CMIP6 in the cloud</a>.</li>
-    <li id="r4">IPCC (2021). <a href="https://www.ipcc.ch/report/ar6/wg1/">Climate Change 2021: The Physical Science Basis</a>.</li>
-    <li id="r5">ASHRAE. <a href="https://ashrae-meteo.info/">Climatic design conditions</a>.</li>
-    <li id="r6">Uptime Institute. <a href="https://journal.uptimeinstitute.com/fuel-system-design-reliability/">Fuel system design and reliability</a>.</li>
-    <li id="r7">The White House (2025). <a href="https://www.whitehouse.gov/presidential-actions/2025/07/accelerating-federal-permitting-of-data-center-infrastructure/">Accelerating Federal Permitting of Data Center Infrastructure</a>.</li>
-    <li id="r8">US Department of Energy (2025). <a href="https://www.energy.gov/node/4851856">AI data center site selection on federal lands</a>.</li>
-    <li id="r9">Avanza Energy (2026). <a href="https://avanzaenergy.substack.com/p/the-60-day-clock-ferc-just-forced">FERC's large load interconnection orders</a>.</li>
-    <li id="r10">Utility Dive (2025). <a href="https://www.utilitydive.com/news/texas-law-gives-grid-operator-power-todisconnect-data-centers-during-crisi/751587/">Texas SB 6 lets ERCOT disconnect data centers in emergencies</a>.</li>
-    <li id="r11">NERC (2025). <a href="https://nerc.com/pa/rrm/ea/Documents/Incident_Review_Large_Load_Loss.pdf">Incident review: simultaneous large load loss</a>.</li>
-    <li id="r12">Norris, T. H. et al. (2025). <a href="https://nicholasinstitute.duke.edu/publications/rethinking-load-growth-assessing-potential-integration-large-flexible-loads-us-power">Rethinking Load Growth</a>. Duke University.</li>
-    <li id="r13">US Department of Energy (2023). <a href="https://www.energy.gov/sites/default/files/2023-09/ERCOT%20202(c)%20Order.pdf">Emergency order for ERCOT</a>, September 2023.</li>
-    <li id="r14">Utility Dive (2026). <a href="https://www.utilitydive.com/news/data-center-interconnection-delays-complicate-demand-forecasting-nerc/820695/">NERC 2026 Summer Reliability Assessment</a>.</li>
-    <li id="r15">XDI (2026). <a href="https://xdi.systems/news/2026-global-analysis-of-planned-data-centres-for-physical-climate-risk-and-resilience---key-findings-report">Physical climate risk of planned data centres</a>.</li>
-    <li id="r16">Schneider Electric (2026). <a href="https://www.se.com/ww/en/insights/sustainability/sustainability-research-institute/repricing-compute-economics-climate-risk-resilience-ai-era-capital/">The repricing of compute</a>.</li>
-    <li id="r17">PNNL. <a href="https://eesm.science.energy.gov/presentations/characterizing-heat-wave-impacts-spatially-coincident-peak-loads-and-resulting">Heat waves and spatially coincident peak loads</a>.</li>
-    <li id="r18">Epoch AI (2026). <a href="https://epoch.ai/data/ai-data-centers/directory/openai-stargate-uae">OpenAI Stargate UAE</a>.</li>
-    <li id="r19">The Star / Bloomberg (2025). <a href="https://www.thestar.com.my/business/business-news/2025/11/26/malaysias-data-centre-hub-tightens-approvals-on-water-worries">Malaysia's data centre hub tightens approvals on water worries</a>.</li>
-    <li id="r20">Arctic Today (2025). <a href="https://www.arctictoday.com/stargate-norway-marks-turning-point-in-europes-ai-infrastructure-rac">Stargate Norway</a>.</li>
-  </ol>
+    <li id="r4">ASHRAE. <a href="https://ashrae-meteo.info/">Climatic design conditions</a>.</li>
+    <li id="r5">PNNL. <a href="https://eesm.science.energy.gov/presentations/characterizing-heat-wave-impacts-spatially-coincident-peak-loads-and-resulting">Heat waves and spatially coincident peak loads</a>.</li>
+    <li id="r6">US Department of Energy (2023). <a href="https://www.energy.gov/sites/default/files/2023-09/ERCOT%20202(c)%20Order.pdf">Emergency order for ERCOT</a>, September 2023.</li>
+    <li id="r7">The White House (2025). <a href="https://www.govinfo.gov/content/pkg/FR-2025-07-28/html/2025-14212.htm">Executive Order 14318: Accelerating Federal Permitting of Data Center Infrastructure</a>.</li>
+    <li id="r8">US Department of Energy (2025). <a href="https://www.energy.gov/node/4851856">Site selection for AI data center and energy infrastructure on federal lands</a>.</li>
+    <li id="r9">US Department of Energy (2025). <a href="https://www.energy.gov/node/4850502">DOE identifies 16 federal sites for data center and AI infrastructure</a>.</li>
+    <li id="r10">Akin Gump (2026). <a href="https://www.akingump.com/en/insights/blogs/speaking-energy/ferc-issues-landmark-show-cause-orders-on-large-load-interconnection">FERC issues landmark show cause orders on large load interconnection</a>.</li>
+    <li id="r11">Utility Dive (2025). <a href="https://www.utilitydive.com/news/texas-law-gives-grid-operator-power-todisconnect-data-centers-during-crisi/751587/">Texas SB 6 lets ERCOT disconnect data centers in emergencies</a>.</li>
+    <li id="r12">RAND (2026). <a href="https://www.rand.org/pubs/tools/TLA4617-2.html">Data Center Siting Model and Suitability Mapper for Community Planners</a>.</li>
+    <li id="r13">(2026). <a href="https://arxiv.org/abs/2601.16315">Optimal county-level siting of data centers</a>. arXiv:2601.16315.</li>
+    <li id="r14">Verisk Maplecroft (2025). <a href="https://www.maplecroft.com/solutions/supply-chain-risk/insights/majority-of-worlds-top-data-centre-hubs-face-array-of-rising-heat-related-risks/">Majority of world's top data centre hubs face rising heat-related risks</a>.</li>
+    <li id="r15">University of Hawai&#699;i (2026). <a href="https://manoa.hawaii.edu/news/article.php?aId=14662">Rising heat, humidity threatens cheaper AI data center cooling methods</a>.</li>
+    <li id="r16">Uptime Institute. <a href="https://journal.uptimeinstitute.com/fuel-system-design-reliability/">Fuel system design and reliability</a>.</li>
+    <li id="r17">XDI (2026). <a href="https://xdi.systems/news/2026-global-analysis-of-planned-data-centres-for-physical-climate-risk-and-resilience---key-findings-report">Physical climate risk of planned data centres</a>.</li>
+    <li id="r18">NERC (2025). <a href="https://nerc.com/pa/rrm/ea/Documents/Incident_Review_Large_Load_Loss.pdf">Incident review: simultaneous large load loss</a>.</li>
+    <li id="r19">Norris, T. H. et al. (2025). <a href="https://nicholasinstitute.duke.edu/publications/rethinking-load-growth-assessing-potential-integration-large-flexible-loads-us-power">Rethinking Load Growth</a>. Duke University.</li>
+    <li id="r20">Epoch AI (2026). <a href="https://epoch.ai/data/ai-data-centers/directory/openai-stargate-uae">OpenAI Stargate UAE</a>.</li>
+    <li id="r21">The Star / Bloomberg (2025). <a href="https://www.thestar.com.my/business/business-news/2025/11/26/malaysias-data-centre-hub-tightens-approvals-on-water-worries">Malaysia's data centre hub tightens approvals on water worries</a>.</li>
+    <li id="r22">Arctic Today (2025). <a href="https://www.arctictoday.com/stargate-norway-marks-turning-point-in-europes-ai-infrastructure-rac">Stargate Norway</a>.</li>
+    <li id="r24">NERC (2026). <a href="https://www.ferc.gov/sites/default/files/2026-05/26_Summer%20Assessment_0521.pdf">2026 Summer Reliability Assessment</a>.</li>
+  <li id="r23">IPCC (2021). <a href="https://www.ipcc.ch/report/ar6/wg1/">Climate Change 2021: The Physical Science Basis</a>. Working Group I contribution to the Sixth Assessment Report.</li>
+    <li id="r25">Data Center Frontier (2025). <a href="https://www.datacenterfrontier.com/energy/article/55263580/georgia-follows-ohios-lead-in-moving-energy-costs-to-data-centers">Georgia follows Ohio's lead in moving energy costs to data centers</a>.</li>
+  <li id="r26">Utility Dive (2025). <a href="https://www.utilitydive.com/news/aep-ohio-data-center-crypto-rates-puc/716150/">Ohio regulators approve AEP Ohio's data center tariff</a>.</li>
+  <li id="r27">US Department of Energy (2026). <a href="https://www.energy.gov/node/4858541">Emergency order to deploy backup generation in the Mid-Atlantic amid heat wave</a>.</li>
+  <li id="r28">POWER Magazine (2026). <a href="https://www.powermag.com/ferc-orders-mandatory-nerc-reliability-standards-for-data-center-and-other-computational-loads/">FERC orders mandatory NERC reliability standards for data center and other computational loads</a>.</li>
+</ol>
 </section>
 
 <section id="ack">
@@ -148,24 +157,28 @@
 
 <section id="writeup">
   <h2>Write-up</h2>
-  <div class="todo-block"><p><b>Write this section yourselves.</b> Design rationale, data transformations, and development process with rough people-hours.</p></div>
+  <h3>Design rationale</h3>
+  <div class="todo-block"><p><b>Team to write.</b> Visual encodings and interaction techniques for each figure, and the alternatives you considered and why you rejected them.</p></div>
+  <h3>Development process</h3>
+  <div class="todo-block"><p><b>Team to write.</b> How the work was divided among the four of you.</p></div>
+  <h3>Time and effort</h3>
+  <div class="todo-block"><p><b>Team to write.</b> Roughly how many people-hours the project took, and which parts took the most time.</p></div>
 </section>
 
-<footer class="foot"><p>Data: CMIP6 via Pangeo and Google Cloud; Epoch AI (CC BY 4.0); US Census via us-atlas; Natural Earth via world-atlas. Built with D3.</p></footer>
+<footer class="foot"><p>Data: CMIP6 via Pangeo and Google Cloud; Epoch AI (CC BY 4.0); US Census via us-atlas. Built with D3.</p></footer>
 </main>
 
 <aside class="rail">
   <nav class="quick" aria-label="Quick links">
     <p class="quick-title">Quick links</p>
-    <ol>
-      <li><a href="#fleet">Who is building, and where</a></li>
-      <li><a href="#reach">One heat wave, many data centers</a></li>
-      <li><a href="#season">Every simulated summer</a></li>
-      <li><a href="#grids">Heat spreads across power grids</a></li>
-      <li><a href="#siting">Where the next gigawatt should go</a></li>
-      <li><a href="#world">The same physics worldwide</a></li>
-      <li><a href="#conclusion">Conclusion</a></li>
-    </ol>
+    <ul>
+      <li><a href="https://github.com/nahatav/dsc106-project3"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.6 13.4a1 1 0 0 1 0-1.4l3.4-3.4a1 1 0 1 1 1.4 1.4L12 13.4a1 1 0 0 1-1.4 0ZM7.8 17.6a3 3 0 0 1 0-4.2l1.8-1.8 1.4 1.4-1.8 1.8a1 1 0 0 0 1.4 1.4l1.8-1.8 1.4 1.4-1.8 1.8a3 3 0 0 1-4.2 0Zm8.4-11.2a3 3 0 0 1 0 4.2l-1.8 1.8-1.4-1.4 1.8-1.8a1 1 0 0 0-1.4-1.4l-1.8 1.8-1.4-1.4 1.8-1.8a3 3 0 0 1 4.2 0Z"/></svg><span>Code</span></a></li>
+      <li><a href="https://epoch.ai/data/ai-data-centers"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.6 13.4a1 1 0 0 1 0-1.4l3.4-3.4a1 1 0 1 1 1.4 1.4L12 13.4a1 1 0 0 1-1.4 0ZM7.8 17.6a3 3 0 0 1 0-4.2l1.8-1.8 1.4 1.4-1.8 1.8a1 1 0 0 0 1.4 1.4l1.8-1.8 1.4 1.4-1.8 1.8a3 3 0 0 1-4.2 0Zm8.4-11.2a3 3 0 0 1 0 4.2l-1.8 1.8-1.4-1.4 1.8-1.8a1 1 0 0 0-1.4-1.4l-1.8 1.8-1.4-1.4 1.8-1.8a3 3 0 0 1 4.2 0Z"/></svg><span>Data center data</span></a></li>
+      <li><a href="https://pangeo-data.github.io/pangeo-cmip6-cloud/"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.6 13.4a1 1 0 0 1 0-1.4l3.4-3.4a1 1 0 1 1 1.4 1.4L12 13.4a1 1 0 0 1-1.4 0ZM7.8 17.6a3 3 0 0 1 0-4.2l1.8-1.8 1.4 1.4-1.8 1.8a1 1 0 0 0 1.4 1.4l1.8-1.8 1.4 1.4-1.8 1.8a3 3 0 0 1-4.2 0Zm8.4-11.2a3 3 0 0 1 0 4.2l-1.8 1.8-1.4-1.4 1.8-1.8a1 1 0 0 0-1.4-1.4l-1.8 1.8-1.4-1.4 1.8-1.8a3 3 0 0 1 4.2 0Z"/></svg><span>CMIP6 data</span></a></li>
+      <li><a href="#method"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm6 1.5V9h4.5M9 13h6M9 16.5h6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span>Method</span></a></li>
+      <li><a href="#writeup"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm6 1.5V9h4.5M9 13h6M9 16.5h6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span>Write-up</span></a></li>
+    </ul>
+    <a href="#" class="share" id="share-link"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5.5" r="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="6" cy="12" r="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="18" cy="18.5" r="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="m8.2 10.8 7.6-4.1M8.2 13.2l7.6 4.1" stroke="currentColor" stroke-width="1.6"/></svg><span>Share</span></a>
   </nav>
 </aside>
 </div>
@@ -174,6 +187,6 @@
 <div id="tip" class="tip" role="tooltip"></div>
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
-<script src="main.js?v=25"></script>
+<script src="main.js?v=103"></script>
 </body>
 </html>
