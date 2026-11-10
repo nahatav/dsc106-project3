@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap">
-<link rel="stylesheet" href="style.css?v=108">
+<link rel="stylesheet" href="style.css?v=137">
 </head>
 <body>
 
@@ -29,92 +29,117 @@
 <div class="layout">
 <main>
 
-<p class="lede">AI data centers are approved one site at a time, but a heat wave can reach many of them at once, on the same days that households lean hardest on the grid. Using ten CMIP6 climate models and Epoch AI's records of 77 planned US campuses, we score every county in the lower 48 as a place to build and show where the next gigawatt would add the least shared risk to the fleet and to the people who rely on the same power.</p>
+<p class="lede">AI data centers are approved one site at a time, but heat waves strike many at once. Using ten CMIP6 climate models and 77 planned US campuses, we rank every county as a place to build and show why the fleet's shared heat risk matters for the grid and its regulators.</p>
+
+<nav class="toc toc-inline" aria-label="Contents"><p class="quick-title">Contents</p><ol><li><a href="#explore">Siting risk by county</a></li><li><a href="#fleet">The reach of extreme heat</a></li><li><a href="#replay">A simulated heat wave</a></li><li><a href="#warming">Shared heat days under warming</a></li><li><a href="#duration">Neighbouring grids overheat together</a></li><li><a href="#gov">Governance</a></li><li><a href="#recs">Recommendations</a></li>
+      <li><a href="#appendix">Appendix</a></li><li><a href="#method">Data and method</a></li></ol></nav>
 
 <section id="explore">
-  <h2>Scoring every county</h2>
+  <p class="eyebrow">Figure 1</p>
+  <h2>Siting risk by county</h2>
   <p id="ex-take">&nbsp;</p>
   <figure class="fig fig-full">
     <div class="ex-controls">
       <div class="ex-ctl"><span class="ctl-lab">Climate</span><div class="seg" id="ex-climate" role="group" aria-label="Climate"><button data-k="historical|1995-2014">1995&ndash;2014</button><button data-k="ssp245|2041-2060" class="on">2050s, moderate</button><button data-k="ssp585|2041-2060">2050s, high</button><button data-k="ssp245|2081-2100">2090s, moderate</button><button data-k="ssp585|2081-2100">2090s, high</button></div></div>
       <div class="ex-ctl"><span class="ctl-lab">Criteria</span><div class="crit-row" id="ex-criteria" role="group" aria-label="Siting criteria"></div></div>
+      <div class="ex-ctl"><span class="ctl-lab">County</span><div class="srch"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="ex-search" type="search" placeholder="Find a county" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="ex-sugg"><ul class="srch-list" id="ex-sugg" role="listbox"></ul></div></div>
     </div>
+    <div class="ex-zoombar" id="ex-zoombar"><button id="ex-back" class="ex-back">&larr; Whole country</button><span id="ex-state"></span></div>
     <div class="fig-stage"><svg id="ex-map" role="img" aria-label="US counties shaded by how good a place each is for a new AI data center, with the ten best areas outlined"></svg></div>
     <div class="legend" id="ex-legend"></div>
-    <figcaption>Every county in the lower 48, shaded by its siting risk: the average of its ranks on the selected criteria, from lowest (pale) to highest (dark). Numbered outlines mark the ten lowest-risk areas, at least 500 km apart. Squares mark the Department of Energy's 16 candidate federal sites; dashed lines are grid market boundaries, approximated by states. Hover any county for its scorecard.</figcaption>
+    <figcaption><b>Figure 1.</b> Siting risk for every county in the lower 48, combining the selected criteria (pale: lowest, dark: highest). Numbered outlines mark the ten best areas; squares mark DOE candidate federal sites.</figcaption>
   </figure>
-  <p id="ex-criteria-text">&nbsp;</p>
   <p id="doe-take">&nbsp;</p>
 </section>
 
 <section id="fleet">
-  <h2>How far one site's heat reaches</h2>
+  <p class="eyebrow">Figure 2</p>
+  <h2>The reach of extreme heat</h2>
   <p id="build-take">&nbsp;</p>
   <figure class="fig fig-full">
-    <div class="fig-toolbar rc-bar"><span class="rc-name" id="rc-name"></span><span class="rc-val" id="rc-val"></span></div>
+    <div class="fig-toolbar rc-bar"><button class="play" id="rc-play" aria-label="Play tour"></button><div class="rc-txt"><span class="rc-name" id="rc-name"></span><span class="rc-val" id="rc-val"></span></div></div>
     <div class="fig-stage map-stage rp-stage" id="rc-stage"><canvas id="rc-canvas" aria-hidden="true"></canvas><svg id="rc-map" role="img" aria-label="County map of the chance of extreme heat on the days the selected data center is in extreme heat"></svg></div>
     <div class="legend" id="rc-legend"></div>
-    <figcaption>Each county's chance of extreme heat on the days the selected data center is in extreme heat, pooled over ten CMIP6 models and 20 simulated summers, for the climate selected in Figure 1. Squares are the 77 planned data centers, sized by planned power. The map tours the largest campuses; click any data center to select it.</figcaption>
+    <figcaption><b>Figure 2.</b> Chance each county is in extreme heat on the selected data center's extreme heat days (ten models; climate set in Figure 1). Squares are planned data centers, sized by power.</figcaption>
   </figure>
 </section>
 
 <section id="replay">
-  <h2>One heat wave, many data centers</h2>
+  <p class="eyebrow">Figure 3</p>
+  <h2>A simulated heat wave</h2>
   <p id="replay-take">&nbsp;</p>
   <figure class="fig fig-full">
     <div class="fig-toolbar rp-bar"><button class="play" id="rp-play" aria-label="Play"></button><span class="rp-date" id="rp-date"></span><span class="rp-share" id="rp-share"></span></div>
+    <div class="chart rp-tl" id="rp-tl-wrap"><svg id="rp-tl" role="slider" aria-label="Timeline of the simulated summer; drag to choose a day"></svg></div>
     <div class="fig-stage rp-stage" id="rp-stage"><canvas id="rp-canvas" aria-hidden="true"></canvas><svg id="rp-map" role="img" aria-label="County map of a 45-day simulated heat wave in the 2050s, with data centers marked when in extreme heat"></svg></div>
     <div class="legend" id="rp-legend"></div>
     <div class="fig-stage"><svg id="rp-grid" role="img" aria-label="Every planned data center by day, marked when in extreme heat, with the daily share of the fleet above"></svg></div>
-    <figcaption>One simulated summer in the 2050s under moderate emissions (ACCESS-CM2). The map shows how far each county is above its own design day; planned data centers are filled when in extreme heat. Below, each row is a data center, grouped by grid region from west to east, and each column a day; the bars give the share of planned AI power in extreme heat, and days above the dashed line are shared heat days. Press play, or drag across the grid.</figcaption>
+    <figcaption><b>Figure 3.</b> One simulated 2050s summer (ACCESS-CM2, moderate emissions). Drag the timeline to any day. Map: degrees above each county's design day. Grid: each data center by day, filled when in extreme heat.</figcaption>
   </figure>
 </section>
 
 <section id="warming">
-  <h2>Shared heat as the planet warms</h2>
+  <p class="eyebrow">Figure 4</p>
+  <h2>Shared heat days under warming</h2>
   <p id="warm-take">&nbsp;</p>
   <figure class="fig fig-full">
     <div class="legend legend-top" id="wm-legend"></div>
-    <div class="chart" id="wm-wrap"><svg id="warm" role="img" aria-label="Share of simulated summers by number of shared heat days, one bar per period ordered by global warming"></svg></div>
-    <figcaption>The share of simulated summers (ten CMIP6 models, 20 summers each per period) in five bands of shared heat days, the days when at least a quarter of planned US AI power is in extreme heat at once. Periods are ordered by the global warming the ensemble simulates in them; the median summer is at right. Hover a segment for its count.</figcaption>
+    <div class="chart" id="wm-wrap"><svg id="warm" role="img" aria-label="A typical summer in each period as 153 days, with the median number of shared heat days filled in"></svg></div>
+    <figcaption><b>Figure 4.</b> A typical summer in each period: the median number of shared heat days, placed on their most likely dates. Right: median and range across ten models.</figcaption>
   </figure>
 </section>
 
 <section id="duration">
-  <h2>Longer events across more regions</h2>
+  <p class="eyebrow">Figure 5</p>
+  <h2>Neighbouring grids overheat together</h2>
   <p id="dur-take">&nbsp;</p>
   <figure class="fig fig-full">
-    <div class="fig-toolbar"><span class="ctl-lab">Period</span><div class="seg" id="du-periods" role="group" aria-label="Period"></div></div>
-    <div class="legend legend-top" id="du-legend"></div>
-    <div class="chart" id="du-wrap"><svg id="dur-chart" role="img" aria-label="Calendar of region-wide heat by grid region and date, with the expected number of regions under it at once"></svg></div>
-    <figcaption>Top: the expected number of grid regions under region-wide heat (at least half the region above its design day) on each date. Below: the chance of region-wide heat in each grid region on each date from May to September, with the average length of an event at right, for the selected period; the figure steps through the periods on its own. Hover any date to compare regions. Grid regions are approximated by states.</figcaption>
+    <div class="chart" id="du-wrap"><svg id="dur-chart" role="img" aria-label="Small multiples for seven grid regions: on each region's region-wide heat days, how many bordering regions are also under region-wide heat, in three periods"></svg></div>
+    <figcaption><b>Figure 5.</b> On each grid region's region-wide heat days, the share on which none, one, two, or three or more bordering regions are also under region-wide heat. Columns: 1995&ndash;2014, the 2050s (moderate emissions), the 2090s (high emissions); ten models pooled. Regions run west to east; hover one to outline the regions it borders.</figcaption>
   </figure>
 </section>
 
 <section id="gov">
-  <h2>Who decides</h2>
+  <p class="eyebrow">Figure 6</p>
+  <h2>Governance of new AI capacity</h2>
   <p id="gov-take">&nbsp;</p>
   <figure class="fig fig-full">
     <div class="chart" id="gov-wrap"><svg id="gov-chart" role="img" aria-label="Planned AI power by grid-connection regime, and a matrix of eight governance measures since 2025 against what each addresses"></svg></div>
     <div class="legend" id="gov-legend"></div>
-    <figcaption>Top: planned AI power by who sets its grid-connection terms; click a segment to show the measures that apply. Below: eight measures adopted since January 2025 and what each addresses, from our reading of the cited sources. Hover a cell for details.</figcaption>
+    <figcaption><b>Figure 6.</b> Planned AI power by grid-connection regime (top) and eight measures adopted since 2025, coded by what each addresses.</figcaption>
   </figure>
 </section>
 
 <section id="recs">
   <h2>Recommendations</h2>
-  <p>Figures 1 to 6 point to three changes in how AI infrastructure is reviewed. Each treats the fleet, rather than the single site, as the unit of risk.</p>
   <ol class="recs">
     <li id="rec-1">&nbsp;</li>
     <li id="rec-2">&nbsp;</li>
     <li id="rec-3">&nbsp;</li>
   </ol>
-  <p>Siting for shared heat is not only an engineering choice. When AI load clusters where heat strikes together, the cost of a bad summer falls on everyone connected to those grids, through emergency curtailment, higher prices or outages<a class="cite" href="#r18">18</a><span class="cite-sep">,</span><a class="cite" href="#r19">19</a>. Spreading new capacity toward places that are rarely hot when the rest of the fleet is protects those communities as well as the companies.</p>
+</section>
+
+<section id="appendix">
+  <h2>Appendix: figure notes</h2>
+  <h3>Definitions</h3>
+  <p>A place is in <b>extreme heat</b> on a day hotter than its <b>design day</b>, the temperature exceeded on only 1% of days in 1995&ndash;2014 in that climate model, close to the condition cooling systems are sized for<a class="cite" href="#r4">4</a>. Comparing each model with its own past cancels model biases. A <b>shared heat day</b> is a day when at least a quarter of planned US AI power is in extreme heat at once. A grid region is under <b>region-wide heat</b> when at least half of its area is above its design day.</p>
+  <h3>Figure 1</h3>
+  <p>Four criteria are ranked across counties and averaged. <b>Shared heat with the fleet</b> is how often a county is in extreme heat on the fleet's shared heat days; today's siting tools weigh power, water, land and cooling cost but not this<a class="cite" href="#r12">12</a><span class="cite-sep">,</span><a class="cite" href="#r13">13</a>. <b>Local extreme heat</b> counts days above the county's design day. <b>Cooling burden</b> counts days above 35&deg;C, which drive cooling energy and water use<a class="cite" href="#r14">14</a><span class="cite-sep">,</span><a class="cite" href="#r15">15</a>. <b>Grid concentration</b> favours grid regions hosting less of the planned fleet. Climate fields are on a 1&deg; grid, so county values inherit the roughly 100 km resolution of the models. The ten best areas are chosen greedily at least 500 km apart; DOE's 16 candidate sites come from its 2025 request for information<a class="cite" href="#r9">9</a>.</p>
+  <h3>Figure 2</h3>
+  <p>For each planned site, the map shows how often every county is in extreme heat on the days that site is, pooled over ten models and 20 summers. Heat waves span hundreds of kilometres and push several grids to their limits on the same afternoons<a class="cite" href="#r5">5</a>, so the footprint of one large campus routinely covers many others.</p>
+  <h3>Figure 3</h3>
+  <p>The longest run of shared heat days in the 2050s ensemble (moderate emissions), from one model's simulated summer. It is one plausible summer, not a forecast; it shows how a single season moves through the fleet region by region.</p>
+  <h3>Figure 4</h3>
+  <p>Each period's median summer is drawn as 153 days with its shared heat days placed on the most likely dates. Plotting each model's shared heat days against the global warming it simulates gives about 12 days at 1.5&deg;C, 21 at 2&deg;C and 38 at 3&deg;C; global warming levels add 0.85&deg;C to each model's warming since 1995&ndash;2014<a class="cite" href="#r23">23</a>.</p>
+  <h3>Figure 5</h3>
+  <p>Regions border each other when any of their states share a border: West borders ERCOT, SPP and MISO; ERCOT borders West, SPP and MISO; SPP borders West, ERCOT and MISO; MISO borders West, ERCOT, SPP, PJM and the Southeast; the Southeast borders MISO and PJM; PJM borders MISO, the Southeast and NYISO; NYISO borders PJM (ISO New England is not a study region). Counts pool May to September days across ten models and 20 summers per period. NERC's 2024 Interregional Transfer Capability Study found import capability ranging from 1% to 92% of peak load across regions<a class="cite" href="#r29">29</a>.</p>
+  <h3>Figure 6</h3>
+  <p>Measures were coded from the cited legal and news summaries for what each addresses: federal permitting and DOE's site program speed approval<a class="cite" href="#r7">7</a><span class="cite-sep">,</span><a class="cite" href="#r8">8</a>; FERC's June 2026 show-cause orders and state tariffs set connection terms<a class="cite" href="#r10">10</a><span class="cite-sep">,</span><a class="cite" href="#r25">25</a><span class="cite-sep">,</span><a class="cite" href="#r26">26</a>; Texas SB 6 and FERC's July 2026 order on NERC standards cover grid emergencies<a class="cite" href="#r11">11</a><span class="cite-sep">,</span><a class="cite" href="#r28">28</a>. DOE's May 2026 emergency order moved PJM data centers onto backup generation during a heat wave<a class="cite" href="#r27">27</a>, the only measure touching shared heat, and only during the event. The coding is not a full legal analysis.</p>
 </section>
 
 <section id="method">
   <h2>Data and method</h2>
-  <p>Daily maximum temperature from ten CMIP6 models<a class="cite" href="#r2">2</a> (<span id="model-list"></span>; first member each) via the public cloud archive<a class="cite" href="#r3">3</a>, for 1995&ndash;2014 and for 2041&ndash;2060 and 2081&ndash;2100 under SSP2-4.5 (moderate) and SSP5-8.5 (high emissions). A place is in extreme heat on a day above its own 1995&ndash;2014 99th percentile in that model (its design day), so model biases cancel. A shared heat day has at least a quarter of planned US AI power in extreme heat. Sites are Epoch AI's frontier data centers<a class="cite" href="#r1">1</a>, geocoded and weighted by planned power. Global warming levels add 0.85&deg;C to each model's warming since 1995&ndash;2014<a class="cite" href="#r23">23</a>. Siting criteria are computed on a common 1&deg; grid, take the ten-model median and are sampled at county centroids, so county values inherit the roughly 100 km resolution of the climate models. Each criterion is ranked across about 3,100 counties and the ranks are averaged; the ten best areas are chosen greedily at least 500 km apart. Grid regions and their regulators are approximated by states, and DOE site coordinates beyond the four selected sites are approximate. Figure 6 codes each measure from the cited legal and news summaries; it reflects what each measure addresses as described there, not a full legal analysis. Results hold for 98th to 99.5th percentile thresholds and 25% to 50% fleet shares. Heat stands in for grid stress; it is not a record of emergencies.</p>
+  <p>Daily maximum temperature from ten CMIP6 models<a class="cite" href="#r2">2</a> (<span id="model-list"></span>; first member each) via the public cloud archive<a class="cite" href="#r3">3</a>, for 1995&ndash;2014 and for 2041&ndash;2060 and 2081&ndash;2100 under SSP2-4.5 (moderate) and SSP5-8.5 (high emissions). Data center locations and construction timelines are from Epoch AI<a class="cite" href="#r1">1</a>. Grid regions and their regulators are approximated by states, and DOE site coordinates beyond the four selected sites are approximate. Results hold for 98th to 99.5th percentile thresholds and 25% to 50% fleet shares. Heat stands in for grid stress; it is not a record of emergencies.</p>
   <h3>References</h3>
   <ol class="refs">
     <li id="r1">Epoch AI (2026). <a href="https://epoch.ai/data/ai-data-centers">AI data centers (Frontier Data Centers Hub)</a>. CC BY 4.0.</li>
@@ -145,7 +170,8 @@
   <li id="r26">Utility Dive (2025). <a href="https://www.utilitydive.com/news/aep-ohio-data-center-crypto-rates-puc/716150/">Ohio regulators approve AEP Ohio's data center tariff</a>.</li>
   <li id="r27">US Department of Energy (2026). <a href="https://www.energy.gov/node/4858541">Emergency order to deploy backup generation in the Mid-Atlantic amid heat wave</a>.</li>
   <li id="r28">POWER Magazine (2026). <a href="https://www.powermag.com/ferc-orders-mandatory-nerc-reliability-standards-for-data-center-and-other-computational-loads/">FERC orders mandatory NERC reliability standards for data center and other computational loads</a>.</li>
-</ol>
+  <li id="r29">NERC (2024). <a href="https://nerc.com/pa/RAPA/Pages/ITCS.aspx">Interregional Transfer Capability Study</a>.</li>
+  </ol>
 </section>
 
 <section id="ack">
@@ -156,7 +182,15 @@
 <section id="writeup">
   <h2>Write-up</h2>
   <h3>Design rationale</h3>
-  <div class="todo-block"><p><b>Team to write.</b> Visual encodings and interaction techniques for each figure, and the alternatives you considered and why you rejected them.</p></div>
+  <p><b>Story and order.</b> The article opens with its answer, a county siting map, and then works backwards through the evidence: where the heat reaches (Figure 2), what one summer looks like (Figure 3), how often this happens as the planet warms (Figure 4), what it means for the grid (Figure 5) and who has the power to act (Figure 6). Each figure answers one question, and its lead-in sentence states that answer before the reader looks at the chart.</p>
+  <p><b>Consistent visual language.</b> All risk uses one perceptually uniform colour scale (magma, pale for low and dark for high), so a dark county in Figure 1 and a dark ribbon in Figure 5 mean the same thing. Context is grey, emphasis is a single accent, and data centers are always squares. We dropped an early palette of reds and blues, and a later charcoal one, because readers had to relearn the encoding in each figure.</p>
+  <p><b>Figure 1, siting explorer.</b> A county choropleth fits the decision being made (local zoning and permitting happen at county level) and lets the four criteria be combined into one rank. Toggling criteria and climates re-ranks in place, a search box finds any county, and clicking zooms to its state with the five best counties numbered. We tried a smooth contour surface and hexagons first; counties were more legible and matched existing siting tools.</p>
+  <p><b>Figure 2, heat reach.</b> The same county geometry shows how far one site's extreme heat extends. A tour of the largest campuses animates the footprint growing and shifting; clicking any site selects it. Earlier versions showed the fleet as bubbles, a ridgeline relief, dot maps, per-site build-out strips and a unit histogram; all described where the fleet is but not why its location matters, which this map does directly.</p>
+  <p><b>Figure 3, one simulated summer.</b> An animated county map is paired with a site-by-day grid so that the same moment can be read spatially and across the whole fleet. Playback and a scrubbable timeline let readers stop on the worst day.</p>
+  <p><b>Figure 4, typical summers.</b> Showing each period's median summer as 153 days turns an abstract count into a share of the season that anyone can read. Scatter plots against global warming, unit charts of all 1,000 simulated summers and stacked bands were each accurate but harder to interpret.</p>
+  <p><b>Figure 5, neighbouring grids.</b> A grid region in trouble imports power from its neighbours, so the figure asks one question per region: on its worst days, are its neighbours in trouble too? Small multiples give each of the seven grid regions the same small chart, placed roughly where the region sits, so readers can compare regions at a glance. Each column splits a period's region-wide heat days by how many bordering regions are also under region-wide heat, with light to dark meaning more neighbours, matching the risk scale used throughout. The figure is deliberately static. Earlier versions (a calendar of regional heat, a network map, a chord diagram, a dumbbell chart, a siting simulator, a placement game, exceedance curves and an animated unit chart) were either harder to read or repeated Figures 2 to 4.</p>
+  <p><b>Figure 6, governance.</b> A matrix of measures against the questions they address makes the gap visible as an empty column, and the bar of planned power by regulator shows who would have to fill it. Clicking a regulator filters the measures that apply.</p>
+  <p><b>Interaction choices.</b> Every figure animates once when it scrolls into view and can be replayed or explored by hover and click. Tooltips carry the detail so that the charts stay free of labels and numbers. One climate control, inside Figure 1, also drives Figure 2.</p>
   <h3>Development process</h3>
   <div class="todo-block"><p><b>Team to write.</b> How the work was divided among the four of you.</p></div>
   <h3>Time and effort</h3>
@@ -167,6 +201,21 @@
 </main>
 
 <aside class="rail">
+ <div class="rail-in">
+  <nav class="toc" aria-label="Contents">
+    <p class="quick-title">Contents</p>
+    <ol>
+      <li><a href="#explore">Siting risk by county</a></li>
+      <li><a href="#fleet">The reach of extreme heat</a></li>
+      <li><a href="#replay">A simulated heat wave</a></li>
+      <li><a href="#warming">Shared heat days under warming</a></li>
+      <li><a href="#duration">Neighbouring grids overheat together</a></li>
+      <li><a href="#gov">Governance</a></li>
+      <li><a href="#recs">Recommendations</a></li>
+      <li><a href="#appendix">Appendix</a></li>
+      <li><a href="#method">Data and method</a></li>
+    </ol>
+  </nav>
   <nav class="quick" aria-label="Quick links">
     <p class="quick-title">Quick links</p>
     <ul>
@@ -178,6 +227,7 @@
     </ul>
     <a href="#" class="share" id="share-link"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5.5" r="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="6" cy="12" r="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="18" cy="18.5" r="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="m8.2 10.8 7.6-4.1M8.2 13.2l7.6 4.1" stroke="currentColor" stroke-width="1.6"/></svg><span>Share</span></a>
   </nav>
+ </div>
 </aside>
 </div>
 </div>
@@ -185,6 +235,6 @@
 <div id="tip" class="tip" role="tooltip"></div>
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
-<script src="main.js?v=108"></script>
+<script src="main.js?v=137"></script>
 </body>
 </html>
