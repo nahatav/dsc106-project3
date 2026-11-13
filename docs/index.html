@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap">
-<link rel="stylesheet" href="style.css?v=137">
+<link rel="stylesheet" href="style.css?v=138">
 </head>
 <body>
 
@@ -139,7 +139,7 @@
 
 <section id="method">
   <h2>Data and method</h2>
-  <p>Daily maximum temperature from ten CMIP6 models<a class="cite" href="#r2">2</a> (<span id="model-list"></span>; first member each) via the public cloud archive<a class="cite" href="#r3">3</a>, for 1995&ndash;2014 and for 2041&ndash;2060 and 2081&ndash;2100 under SSP2-4.5 (moderate) and SSP5-8.5 (high emissions). Data center locations and construction timelines are from Epoch AI<a class="cite" href="#r1">1</a>. Grid regions and their regulators are approximated by states, and DOE site coordinates beyond the four selected sites are approximate. Results hold for 98th to 99.5th percentile thresholds and 25% to 50% fleet shares. Heat stands in for grid stress; it is not a record of emergencies.</p>
+  <p><b>Primary dataset: CMIP6</b>, one of the three course datasets. Every heat statistic on this page comes from it. Daily maximum temperature from ten CMIP6 models<a class="cite" href="#r2">2</a> (<span id="model-list"></span>; first member each) via the public cloud archive<a class="cite" href="#r3">3</a>, for 1995&ndash;2014 and for 2041&ndash;2060 and 2081&ndash;2100 under SSP2-4.5 (moderate) and SSP5-8.5 (high emissions). Data center locations, planned power and construction timelines are from Epoch AI<a class="cite" href="#r1">1</a> (CC BY 4.0); we use them only to decide where to sample the CMIP6 fields and how to weight each site, not as a source of climate data. County and state outlines are from the US Census via us-atlas. Grid regions and their regulators are approximated by states, and DOE site coordinates beyond the four selected sites are approximate. Results hold for 98th to 99.5th percentile thresholds and 25% to 50% fleet shares. Heat stands in for grid stress; it is not a record of emergencies.</p>
   <h3>References</h3>
   <ol class="refs">
     <li id="r1">Epoch AI (2026). <a href="https://epoch.ai/data/ai-data-centers">AI data centers (Frontier Data Centers Hub)</a>. CC BY 4.0.</li>
@@ -182,6 +182,9 @@
 <section id="writeup">
   <h2>Write-up</h2>
   <h3>Design rationale</h3>
+  <p><b>Motivation.</b> AI data centers are approved one site at a time, but a heat wave can push many of them, and the grids they share, to their limits on the same days. We wanted a page that answers a planner's question, where should the next data centers go, using the course's CMIP6 data, and that shows why the answer depends on the fleet as a whole rather than on single sites.</p>
+  <p><b>Data transformations.</b> From daily maximum temperature in ten CMIP6 models we compute each place's design day (its own 1995&ndash;2014 99th percentile, so model biases cancel), flag days above it as extreme heat, and aggregate: across sites, weighted by planned power, into shared heat days; across a grid region's area into region-wide heat; across counties into percentile ranks for siting risk; and across models into medians. Each figure's caption and the appendix state which transformation it shows.</p>
+  <p><b>Colour palette.</b> All risk uses one sequential palette, magma, which is perceptually uniform and readable in greyscale, running from pale (low risk) to dark (high risk). Grey carries context such as unselected options, and a single mid-magma accent marks the one thing to look at in a figure. We avoided blue and green and diverging palettes, because every measure here runs one way, from less heat to more.</p>
   <p><b>Story and order.</b> The article opens with its answer, a county siting map, and then works backwards through the evidence: where the heat reaches (Figure 2), what one summer looks like (Figure 3), how often this happens as the planet warms (Figure 4), what it means for the grid (Figure 5) and who has the power to act (Figure 6). Each figure answers one question, and its lead-in sentence states that answer before the reader looks at the chart.</p>
   <p><b>Consistent visual language.</b> All risk uses one perceptually uniform colour scale (magma, pale for low and dark for high), so a dark county in Figure 1 and a dark ribbon in Figure 5 mean the same thing. Context is grey, emphasis is a single accent, and data centers are always squares. We dropped an early palette of reds and blues, and a later charcoal one, because readers had to relearn the encoding in each figure.</p>
   <p><b>Figure 1, siting explorer.</b> A county choropleth fits the decision being made (local zoning and permitting happen at county level) and lets the four criteria be combined into one rank. Toggling criteria and climates re-ranks in place, a search box finds any county, and clicking zooms to its state with the five best counties numbered. We tried a smooth contour surface and hexagons first; counties were more legible and matched existing siting tools.</p>
@@ -235,6 +238,6 @@
 <div id="tip" class="tip" role="tooltip"></div>
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
-<script src="main.js?v=137"></script>
+<script src="main.js?v=138"></script>
 </body>
 </html>
