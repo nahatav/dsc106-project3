@@ -47,10 +47,10 @@ let D = {};
 const json = u => d3.json(u);
 const rKey = k => D.reg.by[k];
 
-Promise.all(["sites", "regions", "coexposure", "buildout", "streams", "siting", "replay", "gwl", "reach", "mosaic", "concurrent", "neighbours", "whatif", "exceed", "nbdist"].map(f => json(`data/${f}.json`))
+Promise.all(["sites", "regions", "coexposure", "buildout", "streams", "siting", "replay", "gwl", "reach", "mosaic", "concurrent", "neighbours", "whatif", "exceed", "nbdist", "govheat"].map(f => json(`data/${f}.json`))
   .concat([json("https://cdn.jsdelivr.net/npm/us-atlas@3/counties-albers-10m.json")]))
-  .then(([sites, reg, coex, build, streams, siting, replay, gwl, reach, mosaic, concurrent, neighbours, whatif, exceed, nbdist, topo]) => {
-    D = { sites: sites.sites, models: sites.models, reg, coex, build, streams, siting, replay, gwl, reach, mosaic, concurrent, neighbours, whatif, exceed, nbdist, topo };
+  .then(([sites, reg, coex, build, streams, siting, replay, gwl, reach, mosaic, concurrent, neighbours, whatif, exceed, nbdist, govheat, topo]) => {
+    D = { sites: sites.sites, models: sites.models, reg, coex, build, streams, siting, replay, gwl, reach, mosaic, concurrent, neighbours, whatif, exceed, nbdist, govheat, topo };
     D.us = D.sites.filter(d => d.country === "United States");
     D.usGW = d3.sum(D.us, d => d.power);
     d3.select("#model-list").text(D.models.join(", "));
@@ -568,27 +568,34 @@ const Gov = {
   init() {
     const gw = r => d3.sum(D.us.filter(d => r.regions.includes(d.region)), d => d.power);
     GOV_REGIMES.forEach(r => { r.gw = gw(r); });
-    this.sel = null;
+    this.sel = null; this.k = "ssp245|2041-2060";
+    d3.select("#gov-periods").selectAll("button").data([["historical|1995-2014", "1995–2014"], ["ssp245|2041-2060", "2050s, moderate"], ["ssp585|2081-2100", "2090s, high"]]).join("button").text(d => d[1])
+      .on("click", (e, d) => { this.k = d[0]; this.heat(true); });
     legendItems("#gov-legend", [{ type: "square", color: INK, label: "Addressed" }, { type: "square", color: "#9aa0a6", label: "Partly, or only during an emergency" }, { type: "outline", color: "#bdc1c6", label: "Not part of the measure as described" }]);
     this.played = reduceMotion;
     responsive("#gov-wrap", w => this.draw(w));
     onVisible("#gov-wrap", () => { this.played = true; d3.selectAll("#gov-chart rect.cell").attr("opacity", 0).transition().delay(d => GOV_ROWS.indexOf(d.r) * 90 + d.i * 40).duration(300).attr("opacity", 1); });
   },
   draw(w) {
-    const narrow = w < 640, labW = narrow ? 0 : 310, colW = (w - labW) / GOV_COLS.length, rowH = narrow ? 58 : 40, headH = narrow ? 64 : 74, barH = narrow ? 118 : 86;
+    const narrow = w < 640, labW = narrow ? 0 : 310, colW = (w - labW) / GOV_COLS.length, rowH = narrow ? 58 : 40, headH = narrow ? 64 : 74, barH = narrow ? 150 : 120;
     const SHORT = ["Speeds approval", "Sets terms", "Emergency", "Site climate", "Many sites at once"];
     const H = barH + headH + GOV_ROWS.length * rowH + 58;
     const svg = d3.select("#gov-chart").attr("width", w).attr("height", H); svg.selectAll("*").remove();
-    // top: who sets connection terms for the planned fleet
-    const tot = d3.sum(GOV_REGIMES, r => r.gw), xb = d3.scaleLinear().domain([0, tot]).range([0, w]), cols = [MAG(0.22), MAG(0.5), MAG(0.74)];
-    svg.append("text").attr("class", "pn-t").attr("y", 14).text(narrow ? `Who sets connection terms, ${fmtGW(tot)} planned` : `Who sets grid-connection terms for the ${fmtGW(tot)} planned by 2030`);
-    let acc = 0;
-    const segs = svg.append("g").attr("transform", "translate(0,26)").selectAll("g").data(GOV_REGIMES).join("g").style("cursor", "pointer").on("click", (e, r) => { this.sel = this.sel === r.k ? null : r.k; this.focus(); });
-    segs.append("rect").attr("x", r => { const x = xb(acc); acc += r.gw; return x; }).attr("width", r => xb(r.gw) - 3).attr("height", 18).attr("fill", (r, i) => cols[i]);
-    if (narrow) GOV_REGIMES.forEach((r, i) => { const q = segs.filter(o => o === r).append("g").attr("transform", `translate(0,${32 + i * 20})`);
-      q.append("rect").attr("width", 10).attr("height", 10).attr("y", -9).attr("fill", cols[i]); q.append("text").attr("class", "gv-seg").attr("x", 16).text(`${r.label}: ${fmtGW(r.gw)} (${fmtPct(r.gw / tot)})`); });
-    else { acc = 0; segs.append("text").attr("class", "gv-seg").attr("x", r => { const x = xb(acc); acc += r.gw; return x; }).attr("y", 36).text(r => (r.k === "FERC" ? "Markets regulated by FERC" : r.k === "TX" ? "ERCOT, Texas law" : "Outside markets"));
-      acc = 0; segs.append("text").attr("class", "gv-seg-v").attr("x", r => { const x = xb(acc); acc += r.gw; return x; }).attr("y", 52).text(r => `${fmtGW(r.gw)} · ${fmtPct(r.gw / tot)}`); }
+    // top: who regulates the planned fleet, and how much of it is in extreme heat on a shared heat day (CMIP6)
+    const tot = d3.sum(GOV_REGIMES, r => r.gw), xb = d3.scaleLinear().domain([0, tot]).range([0, w]), bh = 26;
+    svg.append("text").attr("class", "pn-t").attr("y", 14).text(narrow ? "AI load in extreme heat on a shared heat day" : `Planned AI load by who sets its grid-connection terms (${fmtGW(tot)}), and the part in extreme heat on a typical shared heat day`);
+    let acc = 0; GOV_REGIMES.forEach(r => { r.x0 = xb(acc); r.w = xb(r.gw) - 3; acc += r.gw; });
+    const segs = svg.append("g").attr("transform", "translate(0,28)").selectAll("g").data(GOV_REGIMES).join("g").style("cursor", "pointer").on("click", (e, r) => { this.sel = this.sel === r.k ? null : r.k; this.focus(); })
+      .on("mousemove", (e, r) => { const H2 = D.govheat.by; showTip(e, `<b>${r.label}</b> · ${fmtGW(r.gw)} planned<br>In extreme heat on a typical shared heat day (CMIP6, ten-model median):<br>` + [["historical|1995-2014", "1995–2014"], ["ssp245|2041-2060", "2050s, moderate"], ["ssp585|2081-2100", "2090s, high"]].map(([k, l]) => `${l}: <b>${H2[k][r.k].gw.toFixed(1)} GW</b> (${fmtPct(H2[k][r.k].share)}), ${H2[k].shared_days} shared heat days a summer`).join("<br>")); })
+      .on("mouseleave", hideTip);
+    segs.append("rect").attr("x", r => r.x0).attr("width", r => r.w).attr("height", bh).attr("fill", "#e8eaed");
+    this.hotBars = segs.append("rect").attr("x", r => r.x0).attr("width", 0).attr("height", bh).attr("fill", RISK(0.72));
+    this.hotLabs = segs.append("text").attr("class", "gv-hot").attr("y", bh / 2).attr("dy", "0.35em");
+    if (narrow) GOV_REGIMES.forEach((r, i) => { const q = segs.filter(o => o === r).append("g").attr("transform", `translate(0,${bh + 22 + i * 20})`);
+      q.append("text").attr("class", "gv-seg").text(r.k === "FERC" ? "FERC markets" : r.k === "TX" ? "ERCOT, Texas law" : "Outside markets"); q.append("text").attr("class", "gv-seg-v gv-nh").attr("x", w).attr("text-anchor", "end"); });
+    else { segs.append("text").attr("class", "gv-seg").attr("x", r => r.x0).attr("y", bh + 20).text(r => (r.k === "FERC" ? "Markets regulated by FERC" : r.k === "TX" ? "ERCOT, Texas law" : "Outside markets"));
+      segs.append("text").attr("class", "gv-seg-v gv-nh").attr("x", r => r.x0).attr("y", bh + 37); }
+    this.svgGov = svg;
     this.segs = segs;
     // matrix
     const g = svg.append("g").attr("transform", `translate(0,${barH})`);
@@ -613,7 +620,16 @@ const Gov = {
       g.append("text").attr("class", "gv-tally" + (i === 4 ? " acc" : "")).attr("x", labW + i * colW + colW / 2).attr("y", ty).attr("dy", "0.35em").attr("text-anchor", "middle").text(narrow ? `${full}/${GOV_ROWS.length}` : `${full} of ${GOV_ROWS.length}`);
       if (part) g.append("text").attr("class", "gv-tally-s").attr("x", labW + i * colW + colW / 2).attr("y", ty + 16).attr("dy", "0.35em").attr("text-anchor", "middle").text(`+${part} partly`); });
     rows.on("mouseenter", (e, r) => { if (!this.sel) segs.attr("opacity", s3 => (r.ap.includes(s3.k) ? 1 : 0.3)); }).on("mouseleave", () => this.focus());
-    this.focus();
+    this.focus(); this.heat(false);
+  },
+  heat(animate) {
+    if (!this.hotBars) return;
+    const H2 = D.govheat.by[this.k], t = sel => (animate && !reduceMotion ? sel.transition().duration(700).ease(ease) : sel);
+    t(this.hotBars).attr("width", r => r.w * H2[r.k].share);
+    this.hotLabs.attr("x", r => r.x0 + 8).attr("fill", "#fff").text(r => (r.w * H2[r.k].share > 70 ? `${H2[r.k].gw.toFixed(1)} GW` : ""));
+    d3.select("#gov-chart").selectAll(".gv-nh").text(r => (r.k === "FERC" ? `${H2[r.k].gw.toFixed(1)} of ${fmtGW(r.gw)} in extreme heat (${fmtPct(H2[r.k].share)})` : `${H2[r.k].gw.toFixed(1)} of ${fmtGW(r.gw)} (${fmtPct(H2[r.k].share)})`));
+    d3.selectAll("#gov-periods button").classed("on", d => d[0] === this.k);
+    d3.select("#gov-days").html(`<b>${H2.shared_days}</b> shared heat days a summer`);
   },
   focus() {
     if (!this.rows) return;
@@ -659,7 +675,8 @@ function writeProse() {
   const NB = D.nbdist.by, any = (kk, r) => 1 - NB[kk][r].dist[0];
   d3.select("#dur-take").html(`A grid region in trouble imports power from its neighbours, which is why NERC studies transfer capability between regions${cite(29)}. That help fails when the neighbours are hot too. In the 2050s under moderate emissions, on MISO's region-wide heat days at least one bordering region is also under region-wide heat <b>${fmtPct(any("ssp245|2041-2060", "MISO"))}</b> of the time, and PJM's <b>${fmtPct(any("ssp245|2041-2060", "PJM"))}</b>; in the 2090s under high emissions, both pass ${fmtPct(Math.min(any("ssp585|2081-2100", "MISO"), any("ssp585|2081-2100", "PJM")))}.`);
   const gwr = r => d3.sum(D.us.filter(d => r.includes(d.region)), d => d.power);
-  d3.select("#gov-take").html(`None of the eight measures adopted since 2025 plans for heat across many sites at once. Responsibility is split: ${fmtPct(gwr(["PJM", "MISO", "SPP", "NYISO"]) / D.usGW)} of planned power connects under FERC, ${fmtPct(gwr(["ERCOT"]) / D.usGW)} under Texas law and ${fmtPct(gwr(["Southeast", "West"]) / D.usGW)} outside organized markets.`);
+  const GH = D.govheat.by, g50 = GH["ssp245|2041-2060"];
+  d3.select("#gov-take").html(`Responsibility for the fleet is split: ${fmtPct(gwr(["PJM", "MISO", "SPP", "NYISO"]) / D.usGW)} of planned AI power connects under FERC, ${fmtPct(gwr(["ERCOT"]) / D.usGW)} under Texas law and ${fmtPct(gwr(["Southeast", "West"]) / D.usGW)} outside organized markets. The CMIP6 models show every one of them facing the same heat at once: on a typical shared heat day in the 2050s, <b>${g50.FERC.gw.toFixed(1)} GW</b> of FERC-regulated load, ${g50.TX.gw.toFixed(1)} GW in ERCOT and ${g50.STATE.gw.toFixed(1)} GW outside the markets are in extreme heat, on ${g50.shared_days} such days a summer against ${GH[HIST].shared_days} in 1995&ndash;2014. None of the eight measures adopted since 2025 plans for heat across many sites at once.`);
   const ar1 = [...new Set(pk.slice(0, 10).map(area).filter(Boolean))];
   d3.select("#rec-1").html(`<b>Add shared heat to siting reviews.</b> Placing new capacity in ${list(ar1)} reduces the fleet's shared heat days (Figure 5)${cite(8, 9)}.`);
   d3.select("#rec-2").html(`<b>Plan curtailment for regions, not single sites.</b> Rules now being written at FERC, NERC and in Texas should assume many campuses at once${cite(10, 11, 28)}.`);

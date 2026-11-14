@@ -484,3 +484,5 @@ section { border-top: 0 !important; }
 .crit.on:hover { background: #dadce0; border-color: #dadce0; }
 .crit.on .ck { display: inline-flex; border: 0; background: none !important; color: #202124; }
 .crit:focus-visible { outline: 2px solid #202124; outline-offset: 2px; }
+#gov-chart text.gv-hot { font-size: 13px; font-weight: 600; pointer-events: none; } .gov-days { font-size: 13.5px; color: #5f6368; } .gov-days b { color: #202124; font-weight: 600; }
+#gov-chart text.gv-nh { font-size: 12px; }
