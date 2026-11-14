@@ -568,86 +568,69 @@ const Gov = {
   init() {
     const gw = r => d3.sum(D.us.filter(d => r.regions.includes(d.region)), d => d.power);
     GOV_REGIMES.forEach(r => { r.gw = gw(r); });
-    this.sel = null; this.k = "ssp245|2041-2060";
+    this.k = "ssp245|2041-2060";
     d3.select("#gov-periods").selectAll("button").data([["historical|1995-2014", "1995–2014"], ["ssp245|2041-2060", "2050s, moderate"], ["ssp585|2081-2100", "2090s, high"]]).join("button").text(d => d[1])
       .on("click", (e, d) => { this.k = d[0]; this.heat(true); });
-    legendItems("#gov-legend", [{ type: "square", color: INK, label: "Addressed" }, { type: "square", color: "#9aa0a6", label: "Partly, or only during an emergency" }, { type: "outline", color: "#bdc1c6", label: "Not part of the measure as described" }]);
+    legendItems("#gov-legend", [{ type: "square", color: INK, label: "Addressed" }, { type: "square", color: "#9aa0a6", label: "Partly, or only in an emergency" }, { type: "outline", color: "#bdc1c6", label: "Not addressed" },
+      { type: "band", color: "#dadce0", label: "AI load covered" }, { type: "band", color: RISK(0.72), label: "In extreme heat on a shared heat day (CMIP6)" }]);
     this.played = reduceMotion;
     responsive("#gov-wrap", w => this.draw(w));
-    onVisible("#gov-wrap", () => { this.played = true; d3.selectAll("#gov-chart rect.cell").attr("opacity", 0).transition().delay(d => GOV_ROWS.indexOf(d.r) * 90 + d.i * 40).duration(300).attr("opacity", 1); });
+    onVisible("#gov-wrap", () => { this.played = true; d3.selectAll("#gov-chart rect.cell").attr("opacity", 0).transition().delay(d => GOV_ROWS.indexOf(d.r) * 70 + d.i * 30).duration(300).attr("opacity", 1); this.heat(true); });
   },
   draw(w) {
-    const narrow = w < 640, labW = narrow ? 0 : 310, colW = (w - labW) / GOV_COLS.length, rowH = narrow ? 84 : 64, headH = narrow ? 64 : 74, barH = narrow ? 150 : 120;
-    const SHORT = ["Speeds approval", "Sets terms", "Emergency", "Site climate", "Many sites at once"];
-    const H = barH + headH + GOV_ROWS.length * rowH + 58;
+    const narrow = w < 640, SH = [["Speeds", "approval"], ["Connection", "terms"], ["Emergency", "rules"], ["Site", "climate"], ["Many sites", "at once"]];
+    const nameW = narrow ? 0 : 222, cw = narrow ? Math.min(40, (w * 0.46) / 5) : 78, barX = narrow ? 5 * cw + 16 : nameW + 5 * cw + 28, barW = w - barX - (narrow ? 84 : 100);
+    const headH = narrow ? 104 : 62, rowH = narrow ? 64 : 46, n = GOV_ROWS.length, H = headH + n * rowH + 62;
     const svg = d3.select("#gov-chart").attr("width", w).attr("height", H); svg.selectAll("*").remove();
-    // top: who regulates the planned fleet, and how much of it is in extreme heat on a shared heat day (CMIP6)
-    const tot = d3.sum(GOV_REGIMES, r => r.gw), xb = d3.scaleLinear().domain([0, tot]).range([0, w]), bh = 26;
-    svg.append("text").attr("class", "pn-t").attr("y", 14).text(narrow ? "AI load in extreme heat on a shared heat day" : `Planned AI load by who sets its grid-connection terms (${fmtGW(tot)}), and the part in extreme heat on a typical shared heat day`);
-    let acc = 0; GOV_REGIMES.forEach(r => { r.x0 = xb(acc); r.w = xb(r.gw) - 3; acc += r.gw; });
-    const segs = svg.append("g").attr("transform", "translate(0,28)").selectAll("g").data(GOV_REGIMES).join("g").style("cursor", "pointer").on("click", (e, r) => { this.sel = this.sel === r.k ? null : r.k; this.focus(); })
-      .on("mousemove", (e, r) => { const H2 = D.govheat.by; showTip(e, `<b>${r.label}</b> · ${fmtGW(r.gw)} planned<br>In extreme heat on a typical shared heat day (CMIP6, ten-model median):<br>` + [["historical|1995-2014", "1995–2014"], ["ssp245|2041-2060", "2050s, moderate"], ["ssp585|2081-2100", "2090s, high"]].map(([k, l]) => `${l}: <b>${H2[k][r.k].gw.toFixed(1)} GW</b> (${fmtPct(H2[k][r.k].share)}), ${H2[k].shared_days} shared heat days a summer`).join("<br>")); })
-      .on("mouseleave", hideTip);
-    segs.append("rect").attr("x", r => r.x0).attr("width", r => r.w).attr("height", bh).attr("fill", "#e8eaed");
-    this.hotBars = segs.append("rect").attr("x", r => r.x0).attr("width", 0).attr("height", bh).attr("fill", RISK(0.72));
-    this.hotLabs = segs.append("text").attr("class", "gv-hot").attr("y", bh / 2).attr("dy", "0.35em");
-    if (narrow) GOV_REGIMES.forEach((r, i) => { const q = segs.filter(o => o === r).append("g").attr("transform", `translate(0,${bh + 22 + i * 20})`);
-      q.append("text").attr("class", "gv-seg").text(r.k === "FERC" ? "FERC markets" : r.k === "TX" ? "ERCOT, Texas law" : "Outside markets"); q.append("text").attr("class", "gv-seg-v gv-nh").attr("x", w).attr("text-anchor", "end"); });
-    else { segs.append("text").attr("class", "gv-seg").attr("x", r => r.x0).attr("y", bh + 20).text(r => (r.k === "FERC" ? "Markets regulated by FERC" : r.k === "TX" ? "ERCOT, Texas law" : "Outside markets"));
-      segs.append("text").attr("class", "gv-seg-v gv-nh").attr("x", r => r.x0).attr("y", bh + 37); }
-    this.svgGov = svg;
-    this.segs = segs;
-    // matrix
-    const g = svg.append("g").attr("transform", `translate(0,${barH})`);
-    const hd = g.selectAll("g.hd").data(narrow ? SHORT : GOV_COLS).join("g").attr("class", "hd").attr("transform", (c, i) => `translate(${labW + i * colW + colW / 2},${headH - 10})`);
-    hd.each(function (c, i) { const t = d3.select(this).append("text").attr("class", "gv-col" + (i === 4 ? " acc" : "")).attr("text-anchor", "middle"); const words = c.split(" "), lines = []; let cur = "";
-      words.forEach(wd => { if ((cur + " " + wd).trim().length > (narrow ? 9 : 15)) { lines.push(cur.trim()); cur = wd; } else cur += " " + wd; }); lines.push(cur.trim());
-      lines.forEach((l, j) => t.append("tspan").attr("x", 0).attr("dy", j ? "1.2em" : `${-(lines.length - 1) * 1.2}em`).text(l)); });
-    g.append("rect").attr("x", labW + 4 * colW + 4).attr("y", headH - 4).attr("width", colW - 8).attr("height", GOV_ROWS.length * rowH + 6).attr("fill", "none").attr("stroke", ACC).attr("stroke-width", 1.5).attr("rx", 4);
-    const rows = (this.rows = g.selectAll("g.rw").data(GOV_ROWS).join("g").attr("class", "rw").attr("transform", (r, i) => `translate(0,${headH + i * rowH})`));
-    rows.append("line").attr("x1", 0).attr("x2", w).attr("y1", rowH).attr("y2", rowH).attr("stroke", "#e8eaed");
+    const rowY = i => headH + i * rowH, cellY = narrow ? 38 : rowH / 2;
+    // column headers
+    SH.forEach((c, i) => { const x = nameW + i * cw + cw / 2;
+      if (narrow) { svg.append("text").attr("class", "gv-col" + (i === 4 ? " acc" : "")).attr("transform", `translate(${x + 4},${headH - 10}) rotate(-55)`).text(c.join(" ")); return; }
+      const t = svg.append("text").attr("class", "gv-col" + (i === 4 ? " acc" : "")).attr("text-anchor", "middle").attr("x", x).attr("y", headH - 26);
+      c.forEach((l, j) => t.append("tspan").attr("x", x).attr("dy", j ? "1.2em" : 0).text(l)); });
+    svg.append("text").attr("class", "gv-col gv-bh").attr("x", barX).attr("y", headH - 28).text("AI load covered (GW)");
+    svg.append("text").attr("class", "gv-col2").attr("x", barX).attr("y", headH - 12).text("dark: in extreme heat (CMIP6)");
+    if (!narrow) svg.append("rect").attr("x", nameW + 4 * cw + 3).attr("y", headH - 4).attr("width", cw - 6).attr("height", n * rowH + 8).attr("rx", 6).attr("fill", "none").attr("stroke", ACC).attr("stroke-width", 1.5);
+    // rows
+    const xs = (this.xs = d3.scaleLinear().domain([0, D.usGW / 1000]).range([0, barW])); this.barX = barX; this.narrow = narrow;
+    const rows = (this.rows = svg.selectAll("g.rw").data(GOV_ROWS).join("g").attr("class", "rw").attr("transform", (r, i) => `translate(0,${rowY(i)})`));
+    rows.append("line").attr("x1", 0).attr("x2", w).attr("y1", rowH).attr("y2", rowH).attr("stroke", "#eceef0");
     if (narrow) rows.append("text").attr("class", "gv-name").attr("y", 15).html(r => `<tspan class="gv-date-t">${r.date}</tspan>  ${r.name}`);
-    else { rows.append("text").attr("class", "gv-date").attr("y", 18).attr("dy", "0.35em").text(r => r.date); rows.append("text").attr("class", "gv-name").attr("x", 76).attr("y", 18).attr("dy", "0.35em").text(r => r.name); }
-    // CMIP6 under each measure: planned load it covers (grey), and the part in extreme heat on a typical shared heat day
-    const bx = narrow ? 0 : 76, bw = narrow ? w * 0.62 : labW - bx - 20, by = narrow ? 26 : 32, xs = d3.scaleLinear().domain([0, D.usGW / 1000]).range([0, bw]);
-    rows.append("rect").attr("x", bx).attr("y", by).attr("height", 6).attr("rx", 3).attr("width", r => xs(D.govrules.cover_gw[r.name])).attr("fill", "#dadce0");
-    this.ruleHot = rows.append("rect").attr("x", bx).attr("y", by).attr("height", 6).attr("rx", 3).attr("width", 0).attr("fill", RISK(0.72));
-    this.ruleLab = rows.append("text").attr("class", "gv-rl").attr("x", bx).attr("y", by + 18).attr("dy", "0.35em");
-    this.xsRule = xs;
-    const s2 = Math.min(18, colW * 0.4), cy = narrow ? 64 : rowH / 2;
+    else { rows.append("text").attr("class", "gv-name").attr("y", rowH / 2 - 7).attr("dy", "0.35em").text(r => r.name); rows.append("text").attr("class", "gv-date").attr("y", rowH / 2 + 10).attr("dy", "0.35em").text(r => `${r.who}, ${r.date}`); }
+    const s2 = narrow ? 16 : 18;
     const cells = rows.selectAll("rect.cell").data(r => r.c.map((v, i) => ({ r, v, i }))).join("rect").attr("class", "cell")
-      .attr("x", d => labW + d.i * colW + colW / 2 - s2 / 2).attr("y", cy - s2 / 2).attr("width", s2).attr("height", s2).attr("rx", 2)
-      .attr("fill", d => (d.v === 2 ? INK : d.v === 1 ? "#9aa0a6" : "#fff")).attr("stroke", d => (d.v ? "none" : "#bdc1c6")).attr("stroke-width", 1.2)
-      .on("mousemove", (e, d) => { const R2 = D.govrules, cg = R2.cover_gw[d.r.name]; showTip(e, `<b>${d.r.name}</b> <span class="t-muted">(${d.r.who.toLowerCase()}, ${d.r.date})</span><br>${GOV_COLS[d.i]}<br>${d.r.note[d.i] || (d.v ? "" : "Not part of the measure as described.")}` + (cg ? `<br><span class="t-muted">Covers ${cg.toFixed(1)} GW of planned AI load; on a typical shared heat day in the 2050s, ${R2.by["ssp245|2041-2060"][d.r.name].toFixed(1)} GW of it is in extreme heat (CMIP6).</span>` : "")); }).on("mouseleave", hideTip);
+      .attr("x", d => nameW + d.i * cw + cw / 2 - s2 / 2).attr("y", cellY - s2 / 2).attr("width", s2).attr("height", s2).attr("rx", 3)
+      .attr("fill", d => (d.v === 2 ? INK : d.v === 1 ? "#9aa0a6" : "#fff")).attr("stroke", d => (d.v ? "none" : "#c4c7cc")).attr("stroke-width", 1.2)
+      .on("mousemove", (e, d) => showTip(e, `<b>${d.r.name}</b> <span class="t-muted">(${d.r.who.toLowerCase()}, ${d.r.date})</span><br>${GOV_COLS[d.i]}<br>${d.r.note[d.i] || (d.v ? "" : "Not part of the measure as described.")}`)).on("mouseleave", hideTip);
     if (!this.played) cells.attr("opacity", 0);
-    const ty = headH + GOV_ROWS.length * rowH + 28;
-    if (!narrow) g.append("text").attr("class", "gv-name gv-tally-l").attr("x", 0).attr("y", ty).attr("dy", "0.35em").text("Measures addressing it");
-    GOV_COLS.forEach((c, i) => { const full = GOV_ROWS.filter(r => r.c[i] === 2).length, part = GOV_ROWS.filter(r => r.c[i] === 1).length;
-      g.append("text").attr("class", "gv-tally" + (i === 4 ? " acc" : "")).attr("x", labW + i * colW + colW / 2).attr("y", ty).attr("dy", "0.35em").attr("text-anchor", "middle").text(narrow ? `${full}/${GOV_ROWS.length}` : `${full} of ${GOV_ROWS.length}`);
-      if (part) g.append("text").attr("class", "gv-tally-s").attr("x", labW + i * colW + colW / 2).attr("y", ty + 16).attr("dy", "0.35em").attr("text-anchor", "middle").text(`+${part} partly`); });
-    rows.on("mouseenter", (e, r) => { if (!this.sel) segs.attr("opacity", s3 => (r.ap.includes(s3.k) ? 1 : 0.3)); }).on("mouseleave", () => this.focus());
-    this.focus(); this.heat(false);
+    const bh = narrow ? 10 : 12, by = cellY - bh / 2;
+    rows.append("rect").attr("x", barX).attr("y", by).attr("height", bh).attr("rx", 2).attr("width", r => xs(D.govrules.cover_gw[r.name])).attr("fill", "#e8eaed");
+    this.hot = rows.append("rect").attr("x", barX).attr("y", by).attr("height", bh).attr("rx", 2).attr("width", 0).attr("fill", RISK(0.72));
+    this.val = rows.append("text").attr("class", "gv-rl").attr("y", cellY).attr("dy", "0.35em");
+    rows.filter(r => !D.govrules.cover_gw[r.name]).append("text").attr("class", "gv-rl").attr("x", barX).attr("y", cellY).attr("dy", "0.35em").text("No planned capacity yet");
+    rows.append("rect").attr("x", barX - 4).attr("y", 0).attr("width", w - barX + 4).attr("height", rowH).attr("fill", "transparent")
+      .on("mousemove", (e, r) => { const R2 = D.govrules, c = R2.cover_gw[r.name]; showTip(e, `<b>${r.name}</b><br>` + (c ? `Covers ${c.toFixed(1)} GW of planned AI load. In extreme heat on a typical shared heat day (CMIP6, ten-model median):<br>` + [["historical|1995-2014", "1995–2014"], ["ssp245|2041-2060", "2050s, moderate"], ["ssp585|2081-2100", "2090s, high"]].map(([k, l]) => `${l}: <b>${R2.by[k][r.name].toFixed(1)} GW</b>`).join("<br>") : "No planned capacity in Epoch AI's records yet.")); })
+      .on("mouseleave", hideTip);
+    // tallies and the bar scale
+    const ty = headH + n * rowH + 24;
+    if (!narrow) svg.append("text").attr("class", "gv-name gv-tally-l").attr("y", ty).attr("dy", "0.35em").text("Measures addressing it");
+    GOV_COLS.forEach((c, i) => { const full = GOV_ROWS.filter(r => r.c[i] === 2).length;
+      svg.append("text").attr("class", "gv-tally" + (i === 4 ? " acc" : "")).attr("x", nameW + i * cw + cw / 2).attr("y", ty).attr("dy", "0.35em").attr("text-anchor", "middle").text(narrow ? full : `${full} of ${n}`); });
+    svg.append("g").attr("class", "ax gv-ax").attr("transform", `translate(${barX},${headH + n * rowH + 8})`).call(d3.axisBottom(xs).tickValues([0, 10, 20, 30, 40]).tickFormat(v => v).tickSize(4)).call(g => g.select(".domain").attr("stroke", "#c4c7cc")).call(g => g.append("text").attr("x", xs(40) + 12).attr("y", 15).attr("text-anchor", "start").attr("fill", "#80868b").text("GW"));
+    this.heat(false);
   },
   heat(animate) {
-    if (!this.hotBars) return;
-    const H2 = D.govheat.by[this.k], t = sel => (animate && !reduceMotion ? sel.transition().duration(700).ease(ease) : sel);
-    t(this.hotBars).attr("width", r => r.w * H2[r.k].share);
-    this.hotLabs.attr("x", r => r.x0 + 8).attr("fill", "#fff").text(r => (r.w * H2[r.k].share > 70 ? `${H2[r.k].gw.toFixed(1)} GW` : ""));
-    if (this.ruleHot) {
-      const R2 = D.govrules, rk = this.k;
-      t(this.ruleHot).attr("width", r => this.xsRule(R2.by[rk][r.name]));
-      this.ruleLab.text(r => (R2.cover_gw[r.name] ? `${R2.cover_gw[r.name].toFixed(1)} GW covered · ${R2.by[rk][r.name].toFixed(1)} GW in heat` : "No planned fleet capacity yet"));
-    }
-    d3.select("#gov-chart").selectAll(".gv-nh").text(r => (r.k === "FERC" ? `${H2[r.k].gw.toFixed(1)} of ${fmtGW(r.gw)} in extreme heat (${fmtPct(H2[r.k].share)})` : `${H2[r.k].gw.toFixed(1)} of ${fmtGW(r.gw)} (${fmtPct(H2[r.k].share)})`));
-    d3.selectAll("#gov-periods button").classed("on", d => d[0] === this.k);
-    d3.select("#gov-days").html(`<b>${H2.shared_days}</b> shared heat days a summer`);
+    if (!this.hot) return;
+    const R2 = D.govrules, k = this.k, on = this.played, t = sel => (animate && !reduceMotion ? sel.transition().duration(700).ease(ease) : sel);
+    t(this.hot).attr("width", r => (on ? this.xs(R2.by[k][r.name]) : 0));
+    this.val.attr("x", this.barX + this.xs.range()[1] + (this.narrow ? 80 : 96)).attr("text-anchor", "end")
+      .text(r => (R2.cover_gw[r.name] ? (this.narrow ? `${R2.by[k][r.name].toFixed(1)} / ${R2.cover_gw[r.name].toFixed(1)}` : `${R2.by[k][r.name].toFixed(1)} of ${R2.cover_gw[r.name].toFixed(1)}`) : ""));
+    d3.selectAll("#gov-periods button").classed("on", d => d[0] === k);
+    d3.select("#gov-days").html(`<b>${D.govheat.by[k].shared_days}</b> shared heat days a summer`);
   },
-  focus() {
-    if (!this.rows) return;
-    this.segs.attr("opacity", r => (!this.sel || r.k === this.sel ? 1 : 0.3));
-    this.rows.attr("opacity", r => (!this.sel || r.ap.includes(this.sel) ? 1 : 0.25));
-  },
+  focus() {},
 };
+
 
 /* ---------------- Header image: the explorer's answer, in miniature ---------------- */
 const Hero = {

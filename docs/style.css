@@ -487,3 +487,4 @@ section { border-top: 0 !important; }
 #gov-chart text.gv-hot { font-size: 13px; font-weight: 600; pointer-events: none; } .gov-days { font-size: 13.5px; color: #5f6368; } .gov-days b { color: #202124; font-weight: 600; }
 #gov-chart text.gv-nh { font-size: 12px; }
 #gov-chart text.gv-rl { font-size: 11.5px; fill: #5f6368; }
+#gov-chart text.gv-col2 { font-size: 11.5px; fill: #5f6368; } #gov-chart .gv-ax text { font-size: 11px; fill: #80868b; } #gov-chart text.gv-rl { font-size: 12px; fill: #3c4043; font-variant-numeric: tabular-nums; } #gov-chart text.gv-date { font-size: 11.5px; fill: #80868b; }
