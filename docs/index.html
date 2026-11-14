@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap">
-<link rel="stylesheet" href="style.css?v=150">
+<link rel="stylesheet" href="style.css?v=154">
 </head>
 <body>
 
@@ -106,7 +106,8 @@
   <figure class="fig fig-full">
     <div class="chart" id="gov-wrap"><svg id="gov-chart" role="img" aria-label="Planned AI power by grid-connection regime, and a matrix of eight governance measures since 2025 against what each addresses"></svg></div>
     <div class="legend" id="gov-legend"></div>
-    <figcaption><b>Figure 6.</b> Eight measures adopted since 2025, coded by what each addresses. Right: days a summer when at least a quarter of the planned AI load a measure covers is in extreme heat at once: 1995&ndash;2014, the 2050s under moderate emissions and the 2090s under high emissions (ten CMIP6 models, median).</figcaption>
+    <div class="chart gov-season" id="gov-season-wrap"><svg id="gov-season" role="img" aria-label="Chance of a shared heat day on each summer date for the selected measure's load, in three climates, from ten CMIP6 models"></svg></div>
+    <figcaption><b>Figure 6.</b> Eight measures adopted since 2025, coded by what each addresses. Below: for the selected measure, the share of model summers in which at least a quarter of the planned AI load it covers is in extreme heat on each date, in 1995&ndash;2014, the 2050s (moderate emissions) and the 2090s (high emissions). Ten CMIP6 models, 200 summers per climate.</figcaption>
   </figure>
 </section>
 
@@ -134,7 +135,7 @@
   <h3>Figure 5</h3>
   <p>Regions border each other when any of their states share a border: West borders ERCOT, SPP and MISO; ERCOT borders West, SPP and MISO; SPP borders West, ERCOT and MISO; MISO borders West, ERCOT, SPP, PJM and the Southeast; the Southeast borders MISO and PJM; PJM borders MISO, the Southeast and NYISO; NYISO borders PJM (ISO New England is not a study region). Counts pool May to September days across ten models and 20 summers per period. NERC's 2024 Interregional Transfer Capability Study found import capability ranging from 1% to 92% of peak load across regions<a class="cite" href="#r29">29</a>.</p>
   <h3>Figure 6</h3>
-  <p>Each measure's coverage is approximated from its scope: state rules by the state of each planned site, FERC orders by the four FERC-regulated markets, Texas SB 6 by ERCOT, DOE's May 2026 emergency order by PJM, and the executive order and NERC standards by the whole fleet; DOE's federal sites host no planned capacity in Epoch AI's records yet. For each measure and CMIP6 model, a heat day is a May to September day when at least a quarter of the planned power it covers is above its sites' design days at once (the same threshold as the fleet's shared heat days); the table shows the ten-model median of heat days a summer for 1995&ndash;2014, 2041&ndash;60 under SSP2-4.5 and 2081&ndash;2100 under SSP5-8.5. Measures were coded from the cited legal and news summaries for what each addresses: federal permitting and DOE's site program speed approval<a class="cite" href="#r7">7</a><span class="cite-sep">,</span><a class="cite" href="#r8">8</a>; FERC's June 2026 show-cause orders and state tariffs set connection terms<a class="cite" href="#r10">10</a><span class="cite-sep">,</span><a class="cite" href="#r25">25</a><span class="cite-sep">,</span><a class="cite" href="#r26">26</a>; Texas SB 6 and FERC's July 2026 order on NERC standards cover grid emergencies<a class="cite" href="#r11">11</a><span class="cite-sep">,</span><a class="cite" href="#r28">28</a>. DOE's May 2026 emergency order moved PJM data centers onto backup generation during a heat wave<a class="cite" href="#r27">27</a>, the only measure touching shared heat, and only during the event. The coding is not a full legal analysis.</p>
+  <p>Each measure's coverage is approximated from its scope: state rules by the state of each planned site, FERC orders by the four FERC-regulated markets, Texas SB 6 by ERCOT, DOE's May 2026 emergency order by PJM, and the executive order and NERC standards by the whole fleet; DOE's federal sites host no planned capacity in Epoch AI's records yet. For the heat season, each date from May 1 to September 30 is scored by the share of the 200 model summers in each climate (ten CMIP6 models, 20 years each) in which at least a quarter of the planned power a measure covers is above its sites' design days at once, the same threshold as the fleet's shared heat days, smoothed over five days; the day counts beside each strip are the sum, the expected number of such days a summer. Measures were coded from the cited legal and news summaries for what each addresses: federal permitting and DOE's site program speed approval<a class="cite" href="#r7">7</a><span class="cite-sep">,</span><a class="cite" href="#r8">8</a>; FERC's June 2026 show-cause orders and state tariffs set connection terms<a class="cite" href="#r10">10</a><span class="cite-sep">,</span><a class="cite" href="#r25">25</a><span class="cite-sep">,</span><a class="cite" href="#r26">26</a>; Texas SB 6 and FERC's July 2026 order on NERC standards cover grid emergencies<a class="cite" href="#r11">11</a><span class="cite-sep">,</span><a class="cite" href="#r28">28</a>. DOE's May 2026 emergency order moved PJM data centers onto backup generation during a heat wave<a class="cite" href="#r27">27</a>, the only measure touching shared heat, and only during the event. The coding is not a full legal analysis.</p>
 </section>
 
 <section id="method">
@@ -192,7 +193,7 @@
   <p><b>Figure 3, one simulated summer.</b> An animated county map is paired with a site-by-day grid so that the same moment can be read spatially and across the whole fleet. Playback and a scrubbable timeline let readers stop on the worst day.</p>
   <p><b>Figure 4, typical summers.</b> Showing each period's median summer as 153 days turns an abstract count into a share of the season that anyone can read. Scatter plots against global warming, unit charts of all 1,000 simulated summers and stacked bands were each accurate but harder to interpret.</p>
   <p><b>Figure 5, neighbouring grids.</b> A grid region in trouble imports power from its neighbours, so the figure asks one question per region: on its worst days, are its neighbours in trouble too? Small multiples give each of the seven grid regions the same small chart, placed roughly where the region sits, so readers can compare regions at a glance. Each column splits a period's region-wide heat days by how many bordering regions are also under region-wide heat, with light to dark meaning more neighbours, matching the risk scale used throughout. The figure is deliberately static. Earlier versions (a calendar of regional heat, a network map, a chord diagram, a dumbbell chart, a siting simulator, a placement game, exceedance curves and an animated unit chart) were either harder to read or repeated Figures 2 to 4.</p>
-  <p><b>Figure 6, governance.</b> A table of measures against the questions they address makes the gap visible as an empty column. Three heat cells on the right tie each measure to the climate data: how many days a summer the load it covers faces extreme heat at once, in each climate, shaded on the same magma scale as the rest of the page. Showing all three climates side by side keeps the figure static and makes the rise readable along each row.</p>
+  <p><b>Figure 6, governance.</b> A table of measures against the questions they address makes the gap visible as an empty column. Selecting a measure links the table to the climate data in the same way the county explorer works: the heat season below redraws for the load that measure covers, one strip per climate on a shared calendar, so readers see both how many more shared heat days arrive and how the season stretches from midsummer into June and September.</p>
   <p><b>Interaction choices.</b> Every figure animates once when it scrolls into view and can be replayed or explored by hover and click. Tooltips carry the detail so that the charts stay free of labels and numbers. One climate control, inside Figure 1, also drives Figure 2.</p>
   <h3>Development process</h3>
   <div class="todo-block"><p><b>Team to write.</b> How the work was divided among the four of you.</p></div>
@@ -238,6 +239,6 @@
 <div id="tip" class="tip" role="tooltip"></div>
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
-<script src="main.js?v=150"></script>
+<script src="main.js?v=154"></script>
 </body>
 </html>

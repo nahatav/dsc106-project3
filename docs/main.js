@@ -47,10 +47,10 @@ let D = {};
 const json = u => d3.json(u);
 const rKey = k => D.reg.by[k];
 
-Promise.all(["sites", "regions", "coexposure", "buildout", "streams", "siting", "replay", "gwl", "reach", "mosaic", "concurrent", "neighbours", "whatif", "exceed", "nbdist", "govheat", "govrules"].map(f => json(`data/${f}.json`))
+Promise.all(["sites", "regions", "coexposure", "buildout", "streams", "siting", "replay", "gwl", "reach", "mosaic", "concurrent", "neighbours", "whatif", "exceed", "nbdist", "govheat", "govrules", "govseason"].map(f => json(`data/${f}.json`))
   .concat([json("https://cdn.jsdelivr.net/npm/us-atlas@3/counties-albers-10m.json")]))
-  .then(([sites, reg, coex, build, streams, siting, replay, gwl, reach, mosaic, concurrent, neighbours, whatif, exceed, nbdist, govheat, govrules, topo]) => {
-    D = { sites: sites.sites, models: sites.models, reg, coex, build, streams, siting, replay, gwl, reach, mosaic, concurrent, neighbours, whatif, exceed, nbdist, govheat, govrules, topo };
+  .then(([sites, reg, coex, build, streams, siting, replay, gwl, reach, mosaic, concurrent, neighbours, whatif, exceed, nbdist, govheat, govrules, govseason, topo]) => {
+    D = { sites: sites.sites, models: sites.models, reg, coex, build, streams, siting, replay, gwl, reach, mosaic, concurrent, neighbours, whatif, exceed, nbdist, govheat, govrules, govseason, topo };
     D.us = D.sites.filter(d => d.country === "United States");
     D.usGW = d3.sum(D.us, d => d.power);
     d3.select("#model-list").text(D.models.join(", "));
@@ -564,64 +564,103 @@ const GOV_ROWS = [
   { date: "Jun 2026", name: "FERC large-load show-cause orders", who: "Federal", ap: ["FERC"], c: [2, 2, 0, 0, 0], ref: 10, note: ["Six market operators must justify or reform how they connect loads above 50 MW, within 60 days.", "Cost responsibility and interconnection procedures for large loads.", "", "", ""] },
   { date: "Jul 2026", name: "FERC order on NERC standards", who: "Federal", ap: ["FERC", "TX", "STATE"], c: [0, 1, 1, 0, 0], ref: 28, note: ["", "Data centers must register with NERC by the end of 2026.", "New standards address how computational loads ride through grid disturbances.", "", ""] },
 ];
-const GOV_K = [["historical|1995-2014", "1995–2014", "Past"], ["ssp245|2041-2060", "2050s", "2050s"], ["ssp585|2081-2100", "2090s", "2090s"]];
+const GOV_K = [["historical|1995-2014", "1995–2014"], ["ssp245|2041-2060", "2050s, moderate"], ["ssp585|2081-2100", "2090s, high"]];
+const GV_HEAT = p => (p < 0.005 ? "#f1f3f4" : RISK(0.04 + 0.96 * Math.min(1, p)));
 const Gov = {
   init() {
     const gw = r => d3.sum(D.us.filter(d => r.regions.includes(d.region)), d => d.power);
     GOV_REGIMES.forEach(r => { r.gw = gw(r); });
+    this.sel = "Executive Order 14318";
     legendItems("#gov-legend", [{ type: "square", color: INK, label: "Addressed" }, { type: "square", color: "#9aa0a6", label: "Partly, or only in an emergency" }, { type: "outline", color: "#bdc1c6", label: "Not addressed" }]);
-    legendRamp("#gov-legend", "Heat days a summer for the load a measure covers (CMIP6)", [0, 0.2, 0.4, 0.6, 0.8, 1].map(GV_HEAT), [[0, "0"], [0.5, "40"], [1, "80"]]);
     this.played = reduceMotion;
     responsive("#gov-wrap", w => this.draw(w));
-    onVisible("#gov-wrap", () => { this.played = true;
-      d3.selectAll("#gov-chart rect.cell").attr("opacity", 0).transition().delay(d => GOV_ROWS.indexOf(d.r) * 70 + d.i * 30).duration(300).attr("opacity", 1);
-      d3.selectAll("#gov-chart g.hc").attr("opacity", 0).transition().delay(d => 500 + GOV_ROWS.indexOf(d.r) * 70 + d.j * 160).duration(400).attr("opacity", 1); });
+    responsive("#gov-season-wrap", w => this.drawSeason(w));
+    onVisible("#gov-wrap", () => { this.played = true; d3.selectAll("#gov-chart rect.cell").attr("opacity", 0).transition().delay(d => GOV_ROWS.indexOf(d.r) * 70 + d.i * 30).duration(300).attr("opacity", 1); });
+    onVisible("#gov-season-wrap", () => { if (reduceMotion) return; d3.selectAll("#gov-season rect.sd").attr("opacity", 0).transition().delay(d => d.j * 220 + d.i * 3).duration(250).attr("opacity", 1); });
   },
   draw(w) {
-    const narrow = w < 640, R2 = D.govrules, SH = [["Speeds", "approval"], ["Connection", "terms"], ["Emergency", "rules"], ["Site", "climate"], ["Many sites", "at once"]];
-    const nameW = narrow ? 0 : 236, cw = narrow ? Math.min(36, (w * 0.42) / 5) : 74, hx = narrow ? 5 * cw + 14 : nameW + 5 * cw + 36, hw = Math.min(narrow ? 999 : 84, (w - hx) / 3);
-    const headH = narrow ? 104 : 80, rowH = narrow ? 62 : 46, n = GOV_ROWS.length, H = headH + n * rowH + 44;
+    const narrow = w < 640, SH = [["Speeds", "approval"], ["Connection", "terms"], ["Emergency", "rules"], ["Site", "climate"], ["Many sites", "at once"]], R2 = D.govrules;
+    const nameW = narrow ? 0 : 290, cw = narrow ? Math.min(56, w / 5) : Math.min(104, (w - 290) / 5);
+    const headH = narrow ? 100 : 62, rowH = narrow ? 64 : 48, n = GOV_ROWS.length, H = headH + n * rowH + 44;
     const svg = d3.select("#gov-chart").attr("width", w).attr("height", H); svg.selectAll("*").remove();
-    const rowY = i => headH + i * rowH, cellY = narrow ? 40 : rowH / 2;
+    const rowY = i => headH + i * rowH, cellY = narrow ? 42 : rowH / 2;
+    // rows first, so the selection background sits under everything
+    const rows = (this.rows = svg.selectAll("g.rw").data(GOV_ROWS).join("g").attr("class", r => "rw" + (R2.cover_gw[r.name] ? " pick" : "")).attr("transform", (r, i) => `translate(0,${rowY(i)})`));
+    rows.append("rect").attr("class", "rw-bg").attr("x", -8).attr("width", w + 16).attr("height", rowH).attr("rx", 6);
+    rows.append("rect").attr("class", "rw-bar").attr("x", -8).attr("y", 8).attr("width", 3).attr("height", rowH - 16).attr("rx", 1.5);
+    rows.append("line").attr("x1", 0).attr("x2", w).attr("y1", rowH).attr("y2", rowH).attr("stroke", "#eceef0");
+    const cov = r => (R2.cover_gw[r.name] ? `${R2.cover_gw[r.name].toFixed(1)} GW` : "no planned load yet");
+    if (narrow) { rows.append("text").attr("class", "gv-name").attr("y", 16).html(r => `${r.name} <tspan class="gv-date-t">${r.date}</tspan>`); }
+    else { rows.append("text").attr("class", "gv-name").attr("y", rowH / 2 - 8).attr("dy", "0.35em").text(r => r.name); rows.append("text").attr("class", "gv-date").attr("y", rowH / 2 + 10).attr("dy", "0.35em").text(r => `${r.who}, ${r.date} · ${cov(r)}`); }
     // column headers
     SH.forEach((c, i) => { const x = nameW + i * cw + cw / 2;
-      if (narrow) { svg.append("text").attr("class", "gv-col" + (i === 4 ? " acc" : "")).attr("transform", `translate(${x + 4},${headH - 10}) rotate(-55)`).text(c.join(" ")); return; }
+      if (narrow) { svg.append("text").attr("class", "gv-col" + (i === 4 ? " acc" : "")).attr("transform", `translate(${x + 4},${headH - 10}) rotate(-50)`).text(c.join(" ")); return; }
       const t = svg.append("text").attr("class", "gv-col" + (i === 4 ? " acc" : "")).attr("text-anchor", "middle").attr("x", x).attr("y", headH - 26);
       c.forEach((l, j) => t.append("tspan").attr("x", x).attr("dy", j ? "1.2em" : 0).text(l)); });
-    // CMIP6 heat days, one column per climate
-    svg.append("text").attr("class", "gv-col").attr("x", hx + (3 * hw) / 2).attr("text-anchor", "middle").attr("y", headH - (narrow ? 48 : 46)).text(narrow ? "Heat days a summer" : "Heat days a summer (CMIP6)");
-    svg.append("line").attr("x1", hx + 4).attr("x2", hx + 3 * hw - 4).attr("y1", headH - (narrow ? 40 : 38)).attr("y2", headH - (narrow ? 40 : 38)).attr("stroke", "#dadce0");
-    GOV_K.forEach(([k, l, sh], j) => svg.append("text").attr("class", "gv-col2").attr("text-anchor", "middle").attr("x", hx + j * hw + hw / 2).attr("y", headH - 16).text(narrow ? sh : l));
-    if (!narrow) svg.append("rect").attr("x", nameW + 4 * cw + 4).attr("y", headH - 4).attr("width", cw - 8).attr("height", n * rowH + 8).attr("rx", 6).attr("fill", "none").attr("stroke", ACC).attr("stroke-width", 1.5);
-    // rows
-    const rows = svg.selectAll("g.rw").data(GOV_ROWS).join("g").attr("class", "rw").attr("transform", (r, i) => `translate(0,${rowY(i)})`);
-    rows.append("line").attr("x1", 0).attr("x2", w).attr("y1", rowH).attr("y2", rowH).attr("stroke", "#eceef0");
-    const cov = r => (R2.cover_gw[r.name] ? `covers ${R2.cover_gw[r.name].toFixed(1)} GW` : "no planned load yet");
-    if (narrow) rows.append("text").attr("class", "gv-name").attr("y", 15).html(r => `${r.name} <tspan class="gv-date-t">${r.date}</tspan>`);
-    else { rows.append("text").attr("class", "gv-name").attr("y", rowH / 2 - 7).attr("dy", "0.35em").text(r => r.name); rows.append("text").attr("class", "gv-date").attr("y", rowH / 2 + 10).attr("dy", "0.35em").text(r => `${r.who}, ${r.date} · ${cov(r)}`); }
+    if (!narrow) svg.append("rect").attr("x", nameW + 4 * cw + 6).attr("y", headH - 4).attr("width", cw - 12).attr("height", n * rowH + 8).attr("rx", 6).attr("fill", "none").attr("stroke", ACC).attr("stroke-width", 1.5).attr("pointer-events", "none");
     const s2 = narrow ? 16 : 18;
     const cells = rows.selectAll("rect.cell").data(r => r.c.map((v, i) => ({ r, v, i }))).join("rect").attr("class", "cell")
       .attr("x", d => nameW + d.i * cw + cw / 2 - s2 / 2).attr("y", cellY - s2 / 2).attr("width", s2).attr("height", s2).attr("rx", 3)
       .attr("fill", d => (d.v === 2 ? INK : d.v === 1 ? "#9aa0a6" : "#fff")).attr("stroke", d => (d.v ? "none" : "#c4c7cc")).attr("stroke-width", 1.2)
       .on("mousemove", (e, d) => showTip(e, `<b>${d.r.name}</b> <span class="t-muted">(${d.r.who.toLowerCase()}, ${d.r.date})</span><br>${GOV_COLS[d.i]}<br>${d.r.note[d.i] || (d.v ? "" : "Not part of the measure as described.")}`)).on("mouseleave", hideTip);
     if (!this.played) cells.attr("opacity", 0);
-    const ch = narrow ? 26 : 30;
-    const hc = rows.selectAll("g.hc").data(r => GOV_K.map(([k, l], j) => ({ r, k, l, j, v: R2.days[k][r.name], c: R2.cover_gw[r.name] }))).join("g").attr("class", "hc")
-      .attr("transform", d => `translate(${hx + d.j * hw + 3},${cellY - ch / 2})`)
-      .on("mousemove", (e, d) => showTip(e, `<b>${d.r.name}</b><br>` + (d.c ? `${d.l}: on <b>${d.v.toFixed(0)} days</b> a summer, at least a quarter of the ${d.c.toFixed(1)} GW this measure covers is in extreme heat at once (ten CMIP6 models, median).` : "No planned capacity in Epoch AI's records yet."))).on("mouseleave", hideTip);
-    hc.append("rect").attr("width", hw - 6).attr("height", ch).attr("rx", 4).attr("fill", d => (d.c ? GV_HEAT(d.v / 80) : "#f8f9fa"));
-    hc.append("text").attr("class", "gv-hd").attr("x", (hw - 6) / 2).attr("y", ch / 2).attr("dy", "0.35em").attr("text-anchor", "middle")
-      .attr("fill", d => (d.c && d.v / 80 > 0.45 ? "#fff" : "#202124")).text(d => (d.c ? d.v.toFixed(0) : "–"));
-    if (!this.played) hc.attr("opacity", 0);
+    rows.on("click", (e, r) => { if (R2.cover_gw[r.name]) { this.sel = r.name; this.focus(true); } });
     // tallies
     const ty = headH + n * rowH + 24;
     if (!narrow) svg.append("text").attr("class", "gv-name gv-tally-l").attr("y", ty).attr("dy", "0.35em").text("Measures addressing it");
     GOV_COLS.forEach((c, i) => { const full = GOV_ROWS.filter(r => r.c[i] === 2).length;
       svg.append("text").attr("class", "gv-tally" + (i === 4 ? " acc" : "")).attr("x", nameW + i * cw + cw / 2).attr("y", ty).attr("dy", "0.35em").attr("text-anchor", "middle").text(narrow ? full : `${full} of ${n}`); });
+    this.focus(false);
   },
-  focus() {},
+  drawSeason(w) {
+    const narrow = w < 640, S = D.govseason, nd = S.days.length; this.sNarrow = narrow;
+    const labW = narrow ? 0 : 128, sumW = narrow ? 0 : 128, sx = labW, sw = w - labW - sumW, dw = sw / nd;
+    const top = narrow ? 70 : 74, stripH = narrow ? 22 : 28, gapY = narrow ? 30 : 14, H = top + 3 * (stripH + gapY) + (narrow ? 62 : 52);
+    const svg = d3.select("#gov-season").attr("width", w).attr("height", H); svg.selectAll("*").remove();
+    svg.append("rect").attr("x", -8).attr("y", 2).attr("width", 3).attr("height", 18).attr("rx", 1.5).attr("fill", INK);
+    this.sTitle = svg.append("text").attr("class", "pn-t").attr("y", 16);
+    const sub = narrow ? ["Darker dates: more summers with at least a quarter", "of this load in extreme heat at once (CMIP6)"] : ["Darker dates: more model summers with at least a quarter of this load in extreme heat at once (ten CMIP6 models).", "Select another measure in the table to compare."];
+    sub.forEach((l, i) => svg.append("text").attr("class", "gv-col2").attr("y", 38 + i * 16).text(l));
+    const yS = j => top + j * (stripH + gapY) + (narrow ? 16 : 0);
+    this.sumT = [];
+    GOV_K.forEach(([k, l], j) => {
+      if (narrow) svg.append("text").attr("class", "gv-date").attr("y", yS(j) - 6).text(l);
+      else svg.append("text").attr("class", "gv-sl").attr("y", yS(j) + stripH / 2).attr("dy", "0.35em").text(l);
+      this.sumT.push(svg.append("text").attr("class", "gv-ss").attr("x", narrow ? w : w).attr("text-anchor", "end").attr("y", narrow ? yS(j) - 6 : yS(j) + stripH / 2).attr("dy", narrow ? 0 : "0.35em"));
+    });
+    const cells = d3.merge(GOV_K.map(([k], j) => S.days.map((d, i) => ({ k, j, i, d }))));
+    this.sd = svg.append("g").selectAll("rect").data(cells).join("rect").attr("class", "sd").attr("x", d => sx + d.i * dw).attr("y", d => yS(d.j)).attr("width", dw + 1).attr("height", stripH).attr("shape-rendering", "crispEdges");
+    // month ticks
+    const mon = ["May", "Jun", "Jul", "Aug", "Sep"];
+    S.days.forEach((d, i) => { if (d.endsWith("-01")) { const x = sx + i * dw;
+      [0, 1, 2].forEach(j => svg.append("line").attr("x1", x).attr("x2", x).attr("y1", yS(j)).attr("y2", yS(j) + stripH).attr("stroke", "#fff").attr("stroke-width", 1.5).attr("pointer-events", "none"));
+      svg.append("text").attr("class", "gv-tick").attr("x", x + 3).attr("y", yS(2) + stripH + 16).text(mon[+d.slice(0, 2) - 5]); } });
+    // colour key, under the calendar on the right
+    const kw = narrow ? 120 : 150, kx = narrow ? 0 : sx + sw - kw - 62, ky = yS(2) + stripH + (narrow ? 34 : 28);
+    const kg = svg.append("g").attr("transform", `translate(${kx},${ky})`);
+    kg.append("text").attr("class", "gv-tick").attr("x", -6).attr("y", 5).attr("dy", "0.35em").attr("text-anchor", narrow ? "start" : "end").text(narrow ? "" : "Share of model summers");
+    d3.range(6).forEach(i => kg.append("rect").attr("x", i * (kw / 6)).attr("width", kw / 6 + 0.5).attr("height", 10).attr("fill", GV_HEAT(i ? i / 5 : 0.02)).attr("shape-rendering", "crispEdges"));
+    kg.append("text").attr("class", "gv-tick").attr("x", kw + 6).attr("y", 5).attr("dy", "0.35em").text(narrow ? "0 to 100% of model summers" : "0 to 100%");
+    if (narrow) kg.select("text").remove();
+    const hair = svg.append("line").attr("y1", top - 6).attr("y2", yS(2) + stripH + 4).attr("stroke", INK).attr("stroke-width", 1).attr("opacity", 0).attr("pointer-events", "none");
+    const fmtD = d3.timeFormat("%b %-d");
+    svg.append("rect").attr("x", sx).attr("y", top - 6).attr("width", sw).attr("height", yS(2) + stripH - top + 10).attr("fill", "transparent")
+      .on("mousemove", e => { const [mx] = d3.pointer(e), i = Math.max(0, Math.min(nd - 1, Math.floor((mx - sx) / dw))), by = S.by[this.sel];
+        hair.attr("x1", sx + i * dw + dw / 2).attr("x2", sx + i * dw + dw / 2).attr("opacity", 1);
+        showTip(e, `<b>${fmtD(new Date(`2001-${S.days[i]}T12:00`))}</b> · ${this.sel}<br>` + GOV_K.map(([k, l]) => `${l}: <b>${Math.round(by[k][i] * 100)}%</b> of model summers`).join("<br>")); })
+      .on("mouseleave", () => { hair.attr("opacity", 0); hideTip(); });
+    this.focus(false);
+  },
+  focus(animate) {
+    const R2 = D.govrules, S = D.govseason, name = this.sel, by = S.by[name];
+    if (this.rows) { this.rows.classed("on", r => r.name === name); }
+    if (!this.sd || !by) return;
+    const c = R2.cover_gw[name], whole = c === d3.max(Object.values(R2.cover_gw));
+    this.sTitle.html(`${this.sNarrow ? "" : "Heat season for "}<tspan font-weight="600">${name}</tspan><tspan fill="#5f6368"> · ${this.sNarrow ? "" : "covers "}${whole ? (this.sNarrow ? "whole fleet, " : "the whole planned fleet, ") : ""}${c.toFixed(1)} GW</tspan>`);
+    (animate && !reduceMotion ? this.sd.transition().duration(450).delay(d => d.i * 2) : this.sd).attr("fill", d => GV_HEAT(by[d.k][d.i]));
+    GOV_K.forEach(([k], j) => this.sumT[j].html(`<tspan class="gv-hv">${Math.round(d3.sum(by[k]))}</tspan> days${this.sNarrow ? "" : " a summer"}`));
+  },
 };
-const GV_HEAT = t => RISK(0.08 + 0.84 * Math.max(0, Math.min(1, t)));
 
 
 
@@ -663,8 +702,8 @@ function writeProse() {
   d3.select("#dur-take").html(`A grid region in trouble imports power from its neighbours, which is why NERC studies transfer capability between regions${cite(29)}. That help fails when the neighbours are hot too. In the 2050s under moderate emissions, on MISO's region-wide heat days at least one bordering region is also under region-wide heat <b>${fmtPct(any("ssp245|2041-2060", "MISO"))}</b> of the time, and PJM's <b>${fmtPct(any("ssp245|2041-2060", "PJM"))}</b>; in the 2090s under high emissions, both pass ${fmtPct(Math.min(any("ssp585|2081-2100", "MISO"), any("ssp585|2081-2100", "PJM")))}.`);
   const gwr = r => d3.sum(D.us.filter(d => r.includes(d.region)), d => d.power);
   const GH = D.govheat.by, g50 = GH["ssp245|2041-2060"];
-  const GD = D.govrules.days, gdr = k => { const v = Object.values(GD[k]).filter(x => x > 0); return [d3.min(v), d3.max(v)].map(x => x.toFixed(0)); };
-  d3.select("#gov-take").html(`Planned AI power answers to three kinds of regulator: ${fmtPct(gwr(["PJM", "MISO", "SPP", "NYISO"]) / D.usGW)} connects under FERC, ${fmtPct(gwr(["ERCOT"]) / D.usGW)} under Texas law and ${fmtPct(gwr(["Southeast", "West"]) / D.usGW)} outside organized markets. None of the eight measures adopted since 2025 plans for heat across many sites at once, yet the CMIP6 models give every one of them more of it. The load each measure covers had at least a quarter of its power in extreme heat at once on ${gdr(HIST).join(" to ")} days a summer in 1995&ndash;2014; that rises to <b>${gdr("ssp245|2041-2060").join(" to ")} days</b> in the 2050s and ${gdr("ssp585|2081-2100").join(" to ")} by the 2090s under high emissions.`);
+  const GS = D.govseason.by, gdr = k => { const v = Object.values(GS).map(o => d3.sum(o[k])); return [d3.min(v), d3.max(v)].map(x => Math.round(x)); };
+  d3.select("#gov-take").html(`Planned AI power answers to three kinds of regulator: ${fmtPct(gwr(["PJM", "MISO", "SPP", "NYISO"]) / D.usGW)} connects under FERC, ${fmtPct(gwr(["ERCOT"]) / D.usGW)} under Texas law and ${fmtPct(gwr(["Southeast", "West"]) / D.usGW)} outside organized markets. None of the eight measures adopted since 2025 plans for heat across many sites at once. In the CMIP6 models, the load each measure covers had a quarter or more of its power in extreme heat at once on ${gdr(HIST).join(" to ")} days a summer in 1995&ndash;2014; by the 2050s that is <b>${gdr("ssp245|2041-2060").join(" to ")} days</b>, and the season stretches from midsummer into June and September. Select a measure to see its heat season.`);
   const ar1 = [...new Set(pk.slice(0, 10).map(area).filter(Boolean))];
   d3.select("#rec-1").html(`<b>Add shared heat to siting reviews.</b> Placing new capacity in ${list(ar1)} reduces the fleet's shared heat days (Figure 5)${cite(8, 9)}.`);
   d3.select("#rec-2").html(`<b>Plan curtailment for regions, not single sites.</b> Rules now being written at FERC, NERC and in Texas should assume many campuses at once${cite(10, 11, 28)}.`);
