@@ -2,7 +2,8 @@
 measure covers and, on the fleet's shared heat days (at least a quarter of
 planned US AI power in extreme heat at once), the GW of that covered load in
 extreme heat. May to September, averaged over shared heat days, ten-model
-median. Coverage is approximated from each measure's scope (see COVER).
+median. Also, for each measure, the days a summer when at least a quarter of the
+load it covers is in extreme heat at once (ten-model median). Coverage is approximated from each measure's scope (see COVER).
 Output: docs/data/govrules.json
 """
 import json
@@ -41,17 +42,20 @@ COVER = {  # measure name -> which planned sites it covers
 }
 names = [s["name"] for s in sites]; mw = np.array([s["power"] for s in sites]); W = mw.sum()
 masks = {k: np.array([f(s) for s in sites]) for k, f in COVER.items()}
-acc = {k: {m: [] for m in COVER} for k in WINDOWS}
+acc = {k: {m: [] for m in COVER} for k in WINDOWS}; days = {k: {m: [] for m in COVER} for k in WINDOWS}
 for f in sorted(RAW.glob("*_tasmax_daily.parquet")):
     d = pd.read_parquet(f); dk = (d.scenario + "|" + d.window).values; x = d[names].values; md = d.date.str[5:].values
     sp = np.quantile(x[dk == WINDOWS[0]], 0.99, axis=0)
     for k in WINDOWS:
         sel = (dk == k) & (md >= "05-01") & (md <= "09-30"); hot = x[sel] > sp
         shared = (hot.astype(float) @ mw) / W >= 0.25
+        ny = len(set(d.date.values[sel].astype(str).astype("U4")))
         for m, msk in masks.items():
+            days[k][m].append(float((((hot[:, msk].astype(float) @ mw[msk]) / mw[msk].sum()) >= 0.25).sum() / ny) if msk.any() else 0.0)
             acc[k][m].append(float(((hot[:, msk].astype(float) @ mw[msk]) / 1000)[shared].mean()) if shared.any() and msk.any() else 0.0)
 out = {"cover_gw": {m: round(float(mw[msk].sum() / 1000), 1) for m, msk in masks.items()}, "states": {s["name"]: s["state"] for s in sites},
-       "by": {k: {m: round(float(np.median(v)), 2) for m, v in acc[k].items()} for k in WINDOWS}}
+       "by": {k: {m: round(float(np.median(v)), 2) for m, v in acc[k].items()} for k in WINDOWS},
+       "days": {k: {m: round(float(np.median(v)), 1) for m, v in days[k].items()} for k in WINDOWS}}
 (ROOT / "docs" / "data" / "govrules.json").write_text(json.dumps(out, separators=(",", ":")))
 print("missing states:", [s["name"] for s in sites if not s["state"]])
-for m in COVER: print(f"{m:36s} cover {out['cover_gw'][m]:5.1f} GW | hot on shared day:", [out['by'][k][m] for k in WINDOWS])
+for m in COVER: print(f"{m:36s} cover {out['cover_gw'][m]:5.1f} GW | hot on shared day:", [out['by'][k][m] for k in WINDOWS], "| days a summer:", [out['days'][k][m] for k in WINDOWS])

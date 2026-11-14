@@ -488,3 +488,8 @@ section { border-top: 0 !important; }
 #gov-chart text.gv-nh { font-size: 12px; }
 #gov-chart text.gv-rl { font-size: 11.5px; fill: #5f6368; }
 #gov-chart text.gv-col2 { font-size: 11.5px; fill: #5f6368; } #gov-chart .gv-ax text { font-size: 11px; fill: #80868b; } #gov-chart text.gv-rl { font-size: 12px; fill: #3c4043; font-variant-numeric: tabular-nums; } #gov-chart text.gv-date { font-size: 11.5px; fill: #80868b; }
+#gov-chart text.gv-grp { font-size: 11.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; fill: #80868b; }
+#gov-chart text.gv-tick { font-size: 11px; fill: #80868b; font-variant-numeric: tabular-nums; }
+#gov-chart text.gv-rl { font-size: 12.5px; fill: #5f6368; font-variant-numeric: tabular-nums; } #gov-chart tspan.gv-hv { font-weight: 600; fill: #202124; } #gov-chart tspan.gv-none { font-style: italic; fill: #9aa0a6; }
+#gov-chart text.gv-tally-l { font-size: 13px; font-weight: 500; fill: #5f6368; } #gov-chart rect.cell { cursor: default; }
+#gov-chart text.gv-hd { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; pointer-events: none; } #gov-chart g.hc { cursor: default; }
