@@ -486,3 +486,4 @@ section { border-top: 0 !important; }
 .crit:focus-visible { outline: 2px solid #202124; outline-offset: 2px; }
 #gov-chart text.gv-hot { font-size: 13px; font-weight: 600; pointer-events: none; } .gov-days { font-size: 13.5px; color: #5f6368; } .gov-days b { color: #202124; font-weight: 600; }
 #gov-chart text.gv-nh { font-size: 12px; }
+#gov-chart text.gv-rl { font-size: 11.5px; fill: #5f6368; }

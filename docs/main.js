@@ -47,10 +47,10 @@ let D = {};
 const json = u => d3.json(u);
 const rKey = k => D.reg.by[k];
 
-Promise.all(["sites", "regions", "coexposure", "buildout", "streams", "siting", "replay", "gwl", "reach", "mosaic", "concurrent", "neighbours", "whatif", "exceed", "nbdist", "govheat"].map(f => json(`data/${f}.json`))
+Promise.all(["sites", "regions", "coexposure", "buildout", "streams", "siting", "replay", "gwl", "reach", "mosaic", "concurrent", "neighbours", "whatif", "exceed", "nbdist", "govheat", "govrules"].map(f => json(`data/${f}.json`))
   .concat([json("https://cdn.jsdelivr.net/npm/us-atlas@3/counties-albers-10m.json")]))
-  .then(([sites, reg, coex, build, streams, siting, replay, gwl, reach, mosaic, concurrent, neighbours, whatif, exceed, nbdist, govheat, topo]) => {
-    D = { sites: sites.sites, models: sites.models, reg, coex, build, streams, siting, replay, gwl, reach, mosaic, concurrent, neighbours, whatif, exceed, nbdist, govheat, topo };
+  .then(([sites, reg, coex, build, streams, siting, replay, gwl, reach, mosaic, concurrent, neighbours, whatif, exceed, nbdist, govheat, govrules, topo]) => {
+    D = { sites: sites.sites, models: sites.models, reg, coex, build, streams, siting, replay, gwl, reach, mosaic, concurrent, neighbours, whatif, exceed, nbdist, govheat, govrules, topo };
     D.us = D.sites.filter(d => d.country === "United States");
     D.usGW = d3.sum(D.us, d => d.power);
     d3.select("#model-list").text(D.models.join(", "));
@@ -577,7 +577,7 @@ const Gov = {
     onVisible("#gov-wrap", () => { this.played = true; d3.selectAll("#gov-chart rect.cell").attr("opacity", 0).transition().delay(d => GOV_ROWS.indexOf(d.r) * 90 + d.i * 40).duration(300).attr("opacity", 1); });
   },
   draw(w) {
-    const narrow = w < 640, labW = narrow ? 0 : 310, colW = (w - labW) / GOV_COLS.length, rowH = narrow ? 58 : 40, headH = narrow ? 64 : 74, barH = narrow ? 150 : 120;
+    const narrow = w < 640, labW = narrow ? 0 : 310, colW = (w - labW) / GOV_COLS.length, rowH = narrow ? 84 : 64, headH = narrow ? 64 : 74, barH = narrow ? 150 : 120;
     const SHORT = ["Speeds approval", "Sets terms", "Emergency", "Site climate", "Many sites at once"];
     const H = barH + headH + GOV_ROWS.length * rowH + 58;
     const svg = d3.select("#gov-chart").attr("width", w).attr("height", H); svg.selectAll("*").remove();
@@ -607,12 +607,18 @@ const Gov = {
     const rows = (this.rows = g.selectAll("g.rw").data(GOV_ROWS).join("g").attr("class", "rw").attr("transform", (r, i) => `translate(0,${headH + i * rowH})`));
     rows.append("line").attr("x1", 0).attr("x2", w).attr("y1", rowH).attr("y2", rowH).attr("stroke", "#e8eaed");
     if (narrow) rows.append("text").attr("class", "gv-name").attr("y", 15).html(r => `<tspan class="gv-date-t">${r.date}</tspan>  ${r.name}`);
-    else { rows.append("text").attr("class", "gv-date").attr("y", rowH / 2).attr("dy", "0.35em").text(r => r.date); rows.append("text").attr("class", "gv-name").attr("x", 76).attr("y", rowH / 2).attr("dy", "0.35em").text(r => r.name); }
-    const s2 = Math.min(18, colW * 0.4), cy = narrow ? 38 : rowH / 2;
+    else { rows.append("text").attr("class", "gv-date").attr("y", 18).attr("dy", "0.35em").text(r => r.date); rows.append("text").attr("class", "gv-name").attr("x", 76).attr("y", 18).attr("dy", "0.35em").text(r => r.name); }
+    // CMIP6 under each measure: planned load it covers (grey), and the part in extreme heat on a typical shared heat day
+    const bx = narrow ? 0 : 76, bw = narrow ? w * 0.62 : labW - bx - 20, by = narrow ? 26 : 32, xs = d3.scaleLinear().domain([0, D.usGW / 1000]).range([0, bw]);
+    rows.append("rect").attr("x", bx).attr("y", by).attr("height", 6).attr("rx", 3).attr("width", r => xs(D.govrules.cover_gw[r.name])).attr("fill", "#dadce0");
+    this.ruleHot = rows.append("rect").attr("x", bx).attr("y", by).attr("height", 6).attr("rx", 3).attr("width", 0).attr("fill", RISK(0.72));
+    this.ruleLab = rows.append("text").attr("class", "gv-rl").attr("x", bx).attr("y", by + 18).attr("dy", "0.35em");
+    this.xsRule = xs;
+    const s2 = Math.min(18, colW * 0.4), cy = narrow ? 64 : rowH / 2;
     const cells = rows.selectAll("rect.cell").data(r => r.c.map((v, i) => ({ r, v, i }))).join("rect").attr("class", "cell")
       .attr("x", d => labW + d.i * colW + colW / 2 - s2 / 2).attr("y", cy - s2 / 2).attr("width", s2).attr("height", s2).attr("rx", 2)
       .attr("fill", d => (d.v === 2 ? INK : d.v === 1 ? "#9aa0a6" : "#fff")).attr("stroke", d => (d.v ? "none" : "#bdc1c6")).attr("stroke-width", 1.2)
-      .on("mousemove", (e, d) => showTip(e, `<b>${d.r.name}</b> <span class="t-muted">(${d.r.who.toLowerCase()}, ${d.r.date})</span><br>${GOV_COLS[d.i]}<br>${d.r.note[d.i] || (d.v ? "" : "Not part of the measure as described.")}`)).on("mouseleave", hideTip);
+      .on("mousemove", (e, d) => { const R2 = D.govrules, cg = R2.cover_gw[d.r.name]; showTip(e, `<b>${d.r.name}</b> <span class="t-muted">(${d.r.who.toLowerCase()}, ${d.r.date})</span><br>${GOV_COLS[d.i]}<br>${d.r.note[d.i] || (d.v ? "" : "Not part of the measure as described.")}` + (cg ? `<br><span class="t-muted">Covers ${cg.toFixed(1)} GW of planned AI load; on a typical shared heat day in the 2050s, ${R2.by["ssp245|2041-2060"][d.r.name].toFixed(1)} GW of it is in extreme heat (CMIP6).</span>` : "")); }).on("mouseleave", hideTip);
     if (!this.played) cells.attr("opacity", 0);
     const ty = headH + GOV_ROWS.length * rowH + 28;
     if (!narrow) g.append("text").attr("class", "gv-name gv-tally-l").attr("x", 0).attr("y", ty).attr("dy", "0.35em").text("Measures addressing it");
@@ -627,6 +633,11 @@ const Gov = {
     const H2 = D.govheat.by[this.k], t = sel => (animate && !reduceMotion ? sel.transition().duration(700).ease(ease) : sel);
     t(this.hotBars).attr("width", r => r.w * H2[r.k].share);
     this.hotLabs.attr("x", r => r.x0 + 8).attr("fill", "#fff").text(r => (r.w * H2[r.k].share > 70 ? `${H2[r.k].gw.toFixed(1)} GW` : ""));
+    if (this.ruleHot) {
+      const R2 = D.govrules, rk = this.k;
+      t(this.ruleHot).attr("width", r => this.xsRule(R2.by[rk][r.name]));
+      this.ruleLab.text(r => (R2.cover_gw[r.name] ? `${R2.cover_gw[r.name].toFixed(1)} GW covered · ${R2.by[rk][r.name].toFixed(1)} GW in heat` : "No planned fleet capacity yet"));
+    }
     d3.select("#gov-chart").selectAll(".gv-nh").text(r => (r.k === "FERC" ? `${H2[r.k].gw.toFixed(1)} of ${fmtGW(r.gw)} in extreme heat (${fmtPct(H2[r.k].share)})` : `${H2[r.k].gw.toFixed(1)} of ${fmtGW(r.gw)} (${fmtPct(H2[r.k].share)})`));
     d3.selectAll("#gov-periods button").classed("on", d => d[0] === this.k);
     d3.select("#gov-days").html(`<b>${H2.shared_days}</b> shared heat days a summer`);
@@ -676,7 +687,7 @@ function writeProse() {
   d3.select("#dur-take").html(`A grid region in trouble imports power from its neighbours, which is why NERC studies transfer capability between regions${cite(29)}. That help fails when the neighbours are hot too. In the 2050s under moderate emissions, on MISO's region-wide heat days at least one bordering region is also under region-wide heat <b>${fmtPct(any("ssp245|2041-2060", "MISO"))}</b> of the time, and PJM's <b>${fmtPct(any("ssp245|2041-2060", "PJM"))}</b>; in the 2090s under high emissions, both pass ${fmtPct(Math.min(any("ssp585|2081-2100", "MISO"), any("ssp585|2081-2100", "PJM")))}.`);
   const gwr = r => d3.sum(D.us.filter(d => r.includes(d.region)), d => d.power);
   const GH = D.govheat.by, g50 = GH["ssp245|2041-2060"];
-  d3.select("#gov-take").html(`Responsibility for the fleet is split: ${fmtPct(gwr(["PJM", "MISO", "SPP", "NYISO"]) / D.usGW)} of planned AI power connects under FERC, ${fmtPct(gwr(["ERCOT"]) / D.usGW)} under Texas law and ${fmtPct(gwr(["Southeast", "West"]) / D.usGW)} outside organized markets. The CMIP6 models show every one of them facing the same heat at once: on a typical shared heat day in the 2050s, <b>${g50.FERC.gw.toFixed(1)} GW</b> of FERC-regulated load, ${g50.TX.gw.toFixed(1)} GW in ERCOT and ${g50.STATE.gw.toFixed(1)} GW outside the markets are in extreme heat, on ${g50.shared_days} such days a summer against ${GH[HIST].shared_days} in 1995&ndash;2014. None of the eight measures adopted since 2025 plans for heat across many sites at once.`);
+  d3.select("#gov-take").html(`Responsibility for the fleet is split: ${fmtPct(gwr(["PJM", "MISO", "SPP", "NYISO"]) / D.usGW)} of planned AI power connects under FERC, ${fmtPct(gwr(["ERCOT"]) / D.usGW)} under Texas law and ${fmtPct(gwr(["Southeast", "West"]) / D.usGW)} outside organized markets. The CMIP6 models show every one of them facing the same heat at once: on a typical shared heat day in the 2050s, <b>${g50.FERC.gw.toFixed(1)} GW</b> of FERC-regulated load, ${g50.TX.gw.toFixed(1)} GW in ERCOT and ${g50.STATE.gw.toFixed(1)} GW outside the markets are in extreme heat, on ${g50.shared_days} such days a summer against ${GH[HIST].shared_days} in 1995&ndash;2014. Under each measure, the same CMIP6 calculation shows how much of the load it covers is in extreme heat on those days: Texas SB 6 covers 7.6 GW, of which ${D.govrules.by["ssp245|2041-2060"]["Texas SB 6"].toFixed(1)} GW is in extreme heat on a typical 2050s shared heat day, and FERC's show-cause orders cover 26 GW, ${D.govrules.by["ssp245|2041-2060"]["FERC large-load show-cause orders"].toFixed(1)} GW of it in heat. None of the eight measures adopted since 2025 plans for heat across many sites at once.`);
   const ar1 = [...new Set(pk.slice(0, 10).map(area).filter(Boolean))];
   d3.select("#rec-1").html(`<b>Add shared heat to siting reviews.</b> Placing new capacity in ${list(ar1)} reduces the fleet's shared heat days (Figure 5)${cite(8, 9)}.`);
   d3.select("#rec-2").html(`<b>Plan curtailment for regions, not single sites.</b> Rules now being written at FERC, NERC and in Texas should assume many campuses at once${cite(10, 11, 28)}.`);
