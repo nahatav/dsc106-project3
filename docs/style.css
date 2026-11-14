@@ -499,3 +499,4 @@ section { border-top: 0 !important; }
 #gov-chart g.rw:not(.pick) text.gv-name { fill: #5f6368; }
 .gov-season { margin-top: 26px; } #gov-season text.gv-sl { font-size: 13px; fill: #3c4043; } #gov-season text.gv-ss { font-size: 12.5px; fill: #5f6368; font-variant-numeric: tabular-nums; }
 #gov-season tspan.gv-hv { font-weight: 600; fill: #202124; } #gov-season text.gv-tick { font-size: 11px; fill: #80868b; } #gov-season text.gv-col2 { font-size: 12px; fill: #5f6368; } #gov-season text.gv-date { font-size: 12px; fill: #5f6368; }
+.gov-ctl { margin: 30px 0 18px; } #gov-chart text.gv-col.acc { fill: #c4306b; }

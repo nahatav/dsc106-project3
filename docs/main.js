@@ -565,12 +565,16 @@ const GOV_ROWS = [
   { date: "Jul 2026", name: "FERC order on NERC standards", who: "Federal", ap: ["FERC", "TX", "STATE"], c: [0, 1, 1, 0, 0], ref: 28, note: ["", "Data centers must register with NERC by the end of 2026.", "New standards address how computational loads ride through grid disturbances.", "", ""] },
 ];
 const GOV_K = [["historical|1995-2014", "1995–2014"], ["ssp245|2041-2060", "2050s, moderate"], ["ssp585|2081-2100", "2090s, high"]];
+const GOV_SHORT = { "Georgia PSC large-load rule": "Georgia PSC", "Texas SB 6": "Texas SB 6", "AEP Ohio data center tariff": "AEP Ohio", "Executive Order 14318": "EO 14318", "DOE 202(c) heat-wave order": "DOE 202(c)", "FERC large-load show-cause orders": "FERC show-cause", "FERC order on NERC standards": "FERC on NERC" };
 const GV_HEAT = p => (p < 0.005 ? "#f1f3f4" : RISK(0.04 + 0.96 * Math.min(1, p)));
 const Gov = {
   init() {
     const gw = r => d3.sum(D.us.filter(d => r.regions.includes(d.region)), d => d.power);
     GOV_REGIMES.forEach(r => { r.gw = gw(r); });
     this.sel = "Executive Order 14318";
+    const ck = `<span class="ck"><svg viewBox="0 0 12 12"><path d="M2.5 6.2 5 8.6 9.6 3.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
+    this.chips = d3.select("#gov-pick").selectAll("button").data(GOV_ROWS.filter(r => D.govrules.cover_gw[r.name])).join("button").attr("class", "crit").html(r => ck + GOV_SHORT[r.name])
+      .on("click", (e, r) => { this.sel = r.name; this.focus(true); });
     legendItems("#gov-legend", [{ type: "square", color: INK, label: "Addressed" }, { type: "square", color: "#9aa0a6", label: "Partly, or only in an emergency" }, { type: "outline", color: "#bdc1c6", label: "Not addressed" }]);
     this.played = reduceMotion;
     responsive("#gov-wrap", w => this.draw(w));
@@ -584,11 +588,8 @@ const Gov = {
     const headH = narrow ? 100 : 62, rowH = narrow ? 64 : 48, n = GOV_ROWS.length, H = headH + n * rowH + 44;
     const svg = d3.select("#gov-chart").attr("width", w).attr("height", H); svg.selectAll("*").remove();
     const rowY = i => headH + i * rowH, cellY = narrow ? 42 : rowH / 2;
-    // the gap column, tinted behind the rows: header to tally
-    if (!narrow) svg.append("rect").attr("x", nameW + 4 * cw + 2).attr("y", narrow ? headH - 2 : 4).attr("width", cw - 4).attr("height", (headH + n * rowH + 40) - (narrow ? headH - 2 : 4)).attr("rx", 8).attr("fill", ACC).attr("fill-opacity", 0.07).attr("pointer-events", "none");
     // rows first, so the selection background sits under everything
     const rows = (this.rows = svg.selectAll("g.rw").data(GOV_ROWS).join("g").attr("class", r => "rw" + (R2.cover_gw[r.name] ? " pick" : "")).attr("transform", (r, i) => `translate(0,${rowY(i)})`));
-    rows.append("rect").attr("class", "rw-bg").attr("width", w).attr("height", rowH);
     rows.append("line").attr("x1", 0).attr("x2", w).attr("y1", rowH).attr("y2", rowH).attr("stroke", "#eceef0");
     const cov = r => (R2.cover_gw[r.name] ? `${R2.cover_gw[r.name].toFixed(1)} GW` : "no planned load yet");
     if (narrow) { rows.append("text").attr("class", "gv-name").attr("y", 16).html(r => `${r.name} <tspan class="gv-date-t">${r.date}</tspan>`); }
@@ -615,10 +616,10 @@ const Gov = {
   drawSeason(w) {
     const narrow = w < 640, S = D.govseason, nd = S.days.length; this.sNarrow = narrow;
     const labW = narrow ? 0 : 128, sumW = narrow ? 0 : 128, sx = labW, sw = w - labW - sumW, dw = sw / nd;
-    const top = narrow ? 70 : 74, stripH = narrow ? 22 : 28, gapY = narrow ? 30 : 14, H = top + 3 * (stripH + gapY) + (narrow ? 62 : 52);
+    const top = narrow ? 70 : 58, stripH = narrow ? 22 : 28, gapY = narrow ? 30 : 14, H = top + 3 * (stripH + gapY) + (narrow ? 62 : 52);
     const svg = d3.select("#gov-season").attr("width", w).attr("height", H); svg.selectAll("*").remove();
     this.sTitle = svg.append("text").attr("class", "pn-t").attr("y", 16);
-    const sub = narrow ? ["Darker dates: more summers with at least a quarter", "of this load in extreme heat at once (CMIP6)"] : ["Darker dates: more model summers with at least a quarter of this load in extreme heat at once (ten CMIP6 models).", "Select another measure in the table to compare."];
+    const sub = narrow ? ["Darker dates: more summers with at least a quarter", "of this load in extreme heat at once (CMIP6)"] : ["Darker dates: more model summers with at least a quarter of this load in extreme heat at once (ten CMIP6 models)."];
     sub.forEach((l, i) => svg.append("text").attr("class", "gv-col2").attr("y", 38 + i * 16).text(l));
     const yS = j => top + j * (stripH + gapY) + (narrow ? 16 : 0);
     this.sumT = [];
@@ -652,7 +653,7 @@ const Gov = {
   },
   focus(animate) {
     const R2 = D.govrules, S = D.govseason, name = this.sel, by = S.by[name];
-    if (this.rows) { this.rows.classed("on", r => r.name === name); }
+    if (this.chips) this.chips.classed("on", r => r.name === name).attr("aria-pressed", r => r.name === name);
     if (!this.sd || !by) return;
     const c = R2.cover_gw[name], whole = c === d3.max(Object.values(R2.cover_gw));
     this.sTitle.html(`${this.sNarrow ? "" : "Heat season for "}<tspan font-weight="600">${name}</tspan><tspan fill="#5f6368"> · ${this.sNarrow ? "" : "covers "}${whole ? (this.sNarrow ? "whole fleet, " : "the whole planned fleet, ") : ""}${c.toFixed(1)} GW</tspan>`);
@@ -702,7 +703,7 @@ function writeProse() {
   const gwr = r => d3.sum(D.us.filter(d => r.includes(d.region)), d => d.power);
   const GH = D.govheat.by, g50 = GH["ssp245|2041-2060"];
   const GS = D.govseason.by, gdr = k => { const v = Object.values(GS).map(o => d3.sum(o[k])); return [d3.min(v), d3.max(v)].map(x => Math.round(x)); };
-  d3.select("#gov-take").html(`Planned AI power answers to three kinds of regulator: ${fmtPct(gwr(["PJM", "MISO", "SPP", "NYISO"]) / D.usGW)} connects under FERC, ${fmtPct(gwr(["ERCOT"]) / D.usGW)} under Texas law and ${fmtPct(gwr(["Southeast", "West"]) / D.usGW)} outside organized markets. None of the eight measures adopted since 2025 plans for heat across many sites at once. In the CMIP6 models, the load each measure covers had a quarter or more of its power in extreme heat at once on ${gdr(HIST).join(" to ")} days a summer in 1995&ndash;2014; by the 2050s that is <b>${gdr("ssp245|2041-2060").join(" to ")} days</b>, and the season stretches from midsummer into June and September. Select a measure to see its heat season.`);
+  d3.select("#gov-take").html(`Planned AI power answers to three kinds of regulator: ${fmtPct(gwr(["PJM", "MISO", "SPP", "NYISO"]) / D.usGW)} connects under FERC, ${fmtPct(gwr(["ERCOT"]) / D.usGW)} under Texas law and ${fmtPct(gwr(["Southeast", "West"]) / D.usGW)} outside organized markets. None of the eight measures adopted since 2025 plans for heat across many sites at once. In the CMIP6 models, the load each measure covers had a quarter or more of its power in extreme heat at once on ${gdr(HIST).join(" to ")} days a summer in 1995&ndash;2014; by the 2050s that is <b>${gdr("ssp245|2041-2060").join(" to ")} days</b>, and the season stretches from midsummer into June and September. Pick a measure under the table to see its heat season.`);
   const ar1 = [...new Set(pk.slice(0, 10).map(area).filter(Boolean))];
   d3.select("#rec-1").html(`<b>Add shared heat to siting reviews.</b> Placing new capacity in ${list(ar1)} reduces the fleet's shared heat days (Figure 5)${cite(8, 9)}.`);
   d3.select("#rec-2").html(`<b>Plan curtailment for regions, not single sites.</b> Rules now being written at FERC, NERC and in Texas should assume many campuses at once${cite(10, 11, 28)}.`);
