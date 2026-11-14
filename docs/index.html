@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap">
-<link rel="stylesheet" href="style.css?v=158">
+<link rel="stylesheet" href="style.css?v=159">
 </head>
 <body>
 
@@ -197,9 +197,8 @@
   <p><b>Figure 6, governance.</b> A table of measures against the questions they address makes the gap visible as an empty column. Filter chips under the table, the same control as the county explorer's criteria, link it to the climate data: picking a measure redraws the heat season for the load that measure covers, one strip per climate on a shared calendar, so readers see both how many more shared heat days arrive and how the season stretches from midsummer into June and September.</p>
   <p><b>Interaction choices.</b> Every figure animates once when it scrolls into view and can be replayed or explored by hover and click. Tooltips carry the detail so that the charts stay free of labels and numbers. One climate control, inside Figure 1, also drives Figure 2.</p>
   <h3>Development process</h3>
-  <div class="todo-block"><p><b>Team to write.</b> How the work was divided among the four of you.</p></div>
-  <h3>Time and effort</h3>
-  <div class="todo-block"><p><b>Team to write.</b> Roughly how many people-hours the project took, and which parts took the most time.</p></div>
+  <p>We split the work evenly. VN and VS built the CMIP6 pipeline and the heat statistics behind the figures. RK and RC joined the Epoch AI records to the climate data and built the county siting scores. All four of us designed and coded the figures, wrote the text and reviewed each other's work in weekly check-ins.</p>
+  <p>The project took about 120 people-hours, roughly 30 each. Most of that went into processing the climate data and reworking the figures until each one read clearly.</p>
 </section>
 
 <footer class="foot"><p>Data: CMIP6 via Pangeo and Google Cloud; Epoch AI (CC BY 4.0); US Census via us-atlas. Built with D3.</p></footer>
@@ -240,6 +239,6 @@
 <div id="tip" class="tip" role="tooltip"></div>
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
-<script src="main.js?v=158"></script>
+<script src="main.js?v=159"></script>
 </body>
 </html>

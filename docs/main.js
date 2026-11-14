@@ -593,7 +593,7 @@ const Gov = {
     rows.append("line").attr("x1", 0).attr("x2", w).attr("y1", rowH).attr("y2", rowH).attr("stroke", "#eceef0");
     const cov = r => (R2.cover_gw[r.name] ? `${R2.cover_gw[r.name].toFixed(1)} GW` : "no planned load yet");
     if (narrow) { rows.append("text").attr("class", "gv-name").attr("y", 16).html(r => `${r.name} <tspan class="gv-date-t">${r.date}</tspan>`); }
-    else { rows.append("text").attr("class", "gv-name").attr("y", rowH / 2 - 8).attr("dy", "0.35em").text(r => r.name); rows.append("text").attr("class", "gv-date").attr("y", rowH / 2 + 10).attr("dy", "0.35em").text(r => `${r.who}, ${r.date} · ${cov(r)}`); }
+    else { rows.append("text").attr("class", "gv-name").attr("y", rowH / 2 - 8).attr("dy", "0.35em").text(r => r.name); rows.append("text").attr("class", "gv-date").attr("y", rowH / 2 + 10).attr("dy", "0.35em").text(r => `${r.who}, ${r.date}, ${cov(r)}`); }
     // column headers
     SH.forEach((c, i) => { const x = nameW + i * cw + cw / 2;
       if (narrow) { svg.append("text").attr("class", "gv-col" + (i === 4 ? " acc" : "")).attr("transform", `translate(${x + 4},${headH - 10}) rotate(-50)`).text(c.join(" ")); return; }
@@ -616,11 +616,8 @@ const Gov = {
   drawSeason(w) {
     const narrow = w < 640, S = D.govseason, nd = S.days.length; this.sNarrow = narrow;
     const labW = narrow ? 0 : 128, sumW = narrow ? 0 : 128, sx = labW, sw = w - labW - sumW, dw = sw / nd;
-    const top = narrow ? 70 : 58, stripH = narrow ? 22 : 28, gapY = narrow ? 30 : 14, H = top + 3 * (stripH + gapY) + (narrow ? 62 : 52);
+    const top = narrow ? 4 : 0, stripH = narrow ? 22 : 28, gapY = narrow ? 30 : 14, H = top + 3 * (stripH + gapY) + (narrow ? 62 : 52);
     const svg = d3.select("#gov-season").attr("width", w).attr("height", H); svg.selectAll("*").remove();
-    this.sTitle = svg.append("text").attr("class", "pn-t").attr("y", 16);
-    const sub = narrow ? ["Darker dates: more summers with at least a quarter", "of this load in extreme heat at once (CMIP6)"] : ["Darker dates: more model summers with at least a quarter of this load in extreme heat at once (ten CMIP6 models)."];
-    sub.forEach((l, i) => svg.append("text").attr("class", "gv-col2").attr("y", 38 + i * 16).text(l));
     const yS = j => top + j * (stripH + gapY) + (narrow ? 16 : 0);
     this.sumT = [];
     GOV_K.forEach(([k, l], j) => {
@@ -638,9 +635,9 @@ const Gov = {
     // colour key, under the calendar on the right
     const kw = narrow ? 120 : 150, kx = narrow ? 0 : sx + sw - kw - 62, ky = yS(2) + stripH + (narrow ? 34 : 28);
     const kg = svg.append("g").attr("transform", `translate(${kx},${ky})`);
-    kg.append("text").attr("class", "gv-tick").attr("x", -6).attr("y", 5).attr("dy", "0.35em").attr("text-anchor", narrow ? "start" : "end").text(narrow ? "" : "Share of model summers");
+    kg.append("text").attr("class", "gv-tick").attr("x", -6).attr("y", 5).attr("dy", "0.35em").attr("text-anchor", narrow ? "start" : "end").text(narrow ? "" : "Share of summers with a shared heat day");
     d3.range(6).forEach(i => kg.append("rect").attr("x", i * (kw / 6)).attr("width", kw / 6 + 0.5).attr("height", 10).attr("fill", GV_HEAT(i ? i / 5 : 0.02)).attr("shape-rendering", "crispEdges"));
-    kg.append("text").attr("class", "gv-tick").attr("x", kw + 6).attr("y", 5).attr("dy", "0.35em").text(narrow ? "0 to 100% of model summers" : "0 to 100%");
+    kg.append("text").attr("class", "gv-tick").attr("x", kw + 6).attr("y", 5).attr("dy", "0.35em").text(narrow ? "Share of summers with a shared heat day" : "0 to 100%");
     if (narrow) kg.select("text").remove();
     const hair = svg.append("line").attr("y1", top - 6).attr("y2", yS(2) + stripH + 4).attr("stroke", INK).attr("stroke-width", 1).attr("opacity", 0).attr("pointer-events", "none");
     const fmtD = d3.timeFormat("%b %-d");
@@ -655,8 +652,6 @@ const Gov = {
     const R2 = D.govrules, S = D.govseason, name = this.sel, by = S.by[name];
     if (this.chips) this.chips.classed("on", r => r.name === name).attr("aria-pressed", r => r.name === name);
     if (!this.sd || !by) return;
-    const c = R2.cover_gw[name], whole = c === d3.max(Object.values(R2.cover_gw));
-    this.sTitle.html(`${this.sNarrow ? "" : "Heat season for "}<tspan font-weight="600">${name}</tspan><tspan fill="#5f6368"> · ${this.sNarrow ? "" : "covers "}${whole ? (this.sNarrow ? "whole fleet, " : "the whole planned fleet, ") : ""}${c.toFixed(1)} GW</tspan>`);
     (animate && !reduceMotion ? this.sd.transition().duration(450).delay(d => d.i * 2) : this.sd).attr("fill", d => GV_HEAT(by[d.k][d.i]));
     GOV_K.forEach(([k], j) => this.sumT[j].html(`<tspan class="gv-hv">${Math.round(d3.sum(by[k]))}</tspan> days${this.sNarrow ? "" : " a summer"}`));
   },
