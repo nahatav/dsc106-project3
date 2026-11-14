@@ -494,9 +494,8 @@ section { border-top: 0 !important; }
 #gov-chart text.gv-tally-l { font-size: 13px; font-weight: 500; fill: #5f6368; } #gov-chart rect.cell { cursor: default; }
 #gov-chart text.gv-hd { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; pointer-events: none; } #gov-chart g.hc { cursor: default; }
 #gov-chart rect.rw-bg { fill: transparent; transition: fill .15s; } #gov-chart rect.rw-bar { fill: transparent; }
-#gov-chart g.rw.pick { cursor: pointer; } #gov-chart g.rw.pick:hover rect.rw-bg { fill: #f8f9fa; }
-#gov-chart g.rw.on rect.rw-bg, #gov-chart g.rw.on:hover rect.rw-bg { fill: #f1f3f4; } #gov-chart g.rw.on rect.rw-bar { fill: #202124; } #gov-chart g.rw.on text.gv-name { font-weight: 600; }
+#gov-chart g.rw.pick { cursor: pointer; } #gov-chart g.rw.pick:hover rect.rw-bg { fill: rgba(32,33,36,.03); }
+#gov-chart g.rw.on rect.rw-bg, #gov-chart g.rw.on:hover rect.rw-bg { fill: rgba(32,33,36,.06); } #gov-chart g.rw.on rect.rw-bar { fill: #202124; } #gov-chart g.rw.on text.gv-name { font-weight: 600; }
 #gov-chart g.rw:not(.pick) text.gv-name { fill: #5f6368; }
 .gov-season { margin-top: 26px; } #gov-season text.gv-sl { font-size: 13px; fill: #3c4043; } #gov-season text.gv-ss { font-size: 12.5px; fill: #5f6368; font-variant-numeric: tabular-nums; }
 #gov-season tspan.gv-hv { font-weight: 600; fill: #202124; } #gov-season text.gv-tick { font-size: 11px; fill: #80868b; } #gov-season text.gv-col2 { font-size: 12px; fill: #5f6368; } #gov-season text.gv-date { font-size: 12px; fill: #5f6368; }
-#gov-chart, #gov-season { overflow: visible; }

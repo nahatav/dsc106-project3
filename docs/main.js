@@ -584,10 +584,11 @@ const Gov = {
     const headH = narrow ? 100 : 62, rowH = narrow ? 64 : 48, n = GOV_ROWS.length, H = headH + n * rowH + 44;
     const svg = d3.select("#gov-chart").attr("width", w).attr("height", H); svg.selectAll("*").remove();
     const rowY = i => headH + i * rowH, cellY = narrow ? 42 : rowH / 2;
+    // the gap column, tinted behind the rows: header to tally
+    if (!narrow) svg.append("rect").attr("x", nameW + 4 * cw + 2).attr("y", narrow ? headH - 2 : 4).attr("width", cw - 4).attr("height", (headH + n * rowH + 40) - (narrow ? headH - 2 : 4)).attr("rx", 8).attr("fill", ACC).attr("fill-opacity", 0.07).attr("pointer-events", "none");
     // rows first, so the selection background sits under everything
     const rows = (this.rows = svg.selectAll("g.rw").data(GOV_ROWS).join("g").attr("class", r => "rw" + (R2.cover_gw[r.name] ? " pick" : "")).attr("transform", (r, i) => `translate(0,${rowY(i)})`));
-    rows.append("rect").attr("class", "rw-bg").attr("x", -8).attr("width", w + 16).attr("height", rowH).attr("rx", 6);
-    rows.append("rect").attr("class", "rw-bar").attr("x", -8).attr("y", 8).attr("width", 3).attr("height", rowH - 16).attr("rx", 1.5);
+    rows.append("rect").attr("class", "rw-bg").attr("width", w).attr("height", rowH);
     rows.append("line").attr("x1", 0).attr("x2", w).attr("y1", rowH).attr("y2", rowH).attr("stroke", "#eceef0");
     const cov = r => (R2.cover_gw[r.name] ? `${R2.cover_gw[r.name].toFixed(1)} GW` : "no planned load yet");
     if (narrow) { rows.append("text").attr("class", "gv-name").attr("y", 16).html(r => `${r.name} <tspan class="gv-date-t">${r.date}</tspan>`); }
@@ -597,7 +598,6 @@ const Gov = {
       if (narrow) { svg.append("text").attr("class", "gv-col" + (i === 4 ? " acc" : "")).attr("transform", `translate(${x + 4},${headH - 10}) rotate(-50)`).text(c.join(" ")); return; }
       const t = svg.append("text").attr("class", "gv-col" + (i === 4 ? " acc" : "")).attr("text-anchor", "middle").attr("x", x).attr("y", headH - 26);
       c.forEach((l, j) => t.append("tspan").attr("x", x).attr("dy", j ? "1.2em" : 0).text(l)); });
-    if (!narrow) svg.append("rect").attr("x", nameW + 4 * cw + 6).attr("y", headH - 4).attr("width", cw - 12).attr("height", n * rowH + 8).attr("rx", 6).attr("fill", "none").attr("stroke", ACC).attr("stroke-width", 1.5).attr("pointer-events", "none");
     const s2 = narrow ? 16 : 18;
     const cells = rows.selectAll("rect.cell").data(r => r.c.map((v, i) => ({ r, v, i }))).join("rect").attr("class", "cell")
       .attr("x", d => nameW + d.i * cw + cw / 2 - s2 / 2).attr("y", cellY - s2 / 2).attr("width", s2).attr("height", s2).attr("rx", 3)
@@ -617,7 +617,6 @@ const Gov = {
     const labW = narrow ? 0 : 128, sumW = narrow ? 0 : 128, sx = labW, sw = w - labW - sumW, dw = sw / nd;
     const top = narrow ? 70 : 74, stripH = narrow ? 22 : 28, gapY = narrow ? 30 : 14, H = top + 3 * (stripH + gapY) + (narrow ? 62 : 52);
     const svg = d3.select("#gov-season").attr("width", w).attr("height", H); svg.selectAll("*").remove();
-    svg.append("rect").attr("x", -8).attr("y", 2).attr("width", 3).attr("height", 18).attr("rx", 1.5).attr("fill", INK);
     this.sTitle = svg.append("text").attr("class", "pn-t").attr("y", 16);
     const sub = narrow ? ["Darker dates: more summers with at least a quarter", "of this load in extreme heat at once (CMIP6)"] : ["Darker dates: more model summers with at least a quarter of this load in extreme heat at once (ten CMIP6 models).", "Select another measure in the table to compare."];
     sub.forEach((l, i) => svg.append("text").attr("class", "gv-col2").attr("y", 38 + i * 16).text(l));
